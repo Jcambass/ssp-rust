@@ -8,8 +8,10 @@ use rand::Rng;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugin(bevy_framepace::FramepacePlugin)
         .insert_resource(Game { health: 100 })
         .insert_resource(ClearColor(Color::BLACK))
+        .add_startup_system(limit_fps)
         .add_startup_system(setup)
         .add_startup_system(setup_ui)
         .add_startup_system(setup_enemy_spawning)
@@ -22,10 +24,90 @@ fn main() {
 }
 
 #[derive(Component)]
-struct Player;
+struct Player {
+    pub speed: f32,
+}
 
-#[derive(Component)]
-struct Enemy;
+impl Player {
+    pub fn new() -> Self {
+        Self {
+            speed: 5.618,
+        }
+    }
+}
+
+#[derive(Component, Clone)]
+struct Enemy {
+    pub image: String,
+    pub health: u32,
+    pub collision_damage: u32,
+    pub bounty: u32,
+    pub speed: f32,
+}
+
+impl Enemy {
+    pub fn random() -> Self {
+        let next_enemy_type =  rand::thread_rng().gen_range(0..100);
+
+        if next_enemy_type < 45 {
+            Self::trespasser()
+        } else if next_enemy_type < 70 {
+            Self::space_crusader()
+        } else if next_enemy_type < 95 {
+            Self::big_ship()
+        } else {
+            Self::dark_lord()
+        }
+    }
+
+    pub fn big_ship() -> Self {
+        let speed =  rand::thread_rng().gen_range(0.971 - 0.03..0.971 + 0.034);
+
+        Self {
+            image: String::from("ships/BigShip.png"),
+            health: 100,
+            speed: speed,
+            collision_damage: 35,
+            bounty: 120
+        }
+    }
+
+    pub fn dark_lord() -> Self {
+        let speed =  rand::thread_rng().gen_range(0.63 - 0.03..0.63 + 0.06);
+
+        Self {
+            image: String::from("ships/darkLord.png"),
+            health: 250,
+            speed: speed,
+            collision_damage: 75,
+            bounty: 250,
+        }
+    }
+
+    pub fn space_crusader() -> Self {
+        let speed =  rand::thread_rng().gen_range(1.001 - 0.04..1.001 + 0.04);
+
+        Self {
+            image: String::from("ships/spaceCrusader.png"),
+            health: 80,
+            speed: speed,
+            collision_damage: 55,
+            bounty: 180
+        }
+    }
+
+    pub fn trespasser() -> Self {
+        let speed =  rand::thread_rng().gen_range(1.53 - 0.09..1.53 + 0.08);
+
+        Self {
+            image: String::from("ships/trespasser.png"),
+            health: 30,
+            speed: speed,
+            collision_damage: 13,
+            bounty: 35
+        }
+    }
+}
 
 #[derive(Component)]
 struct HealthText;
@@ -38,6 +120,12 @@ struct EnemySpawnConfig {
 #[derive(Resource)]
 struct Game {
     pub health: u32,
+}
+
+// TODO: Remove FPS Limit and use correct speed settings
+fn limit_fps(mut settings: ResMut<bevy_framepace::FramepaceSettings>,) {
+    use bevy_framepace::Limiter;
+    settings.limiter = Limiter::from_framerate(40.0);
 }
 
 fn setup_enemy_spawning(mut commands: Commands) {
@@ -86,7 +174,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             transform: Transform::from_xyz(0., 0., 0.),
             ..default()
         },
-        Player,
+        Player::new(),
     ));
 }
 
@@ -109,9 +197,12 @@ fn spawn_enemy(
     config.timer.tick(time.delta());
 
     if config.timer.finished() {
+        let enemy = Enemy::random();
+
         commands.spawn((
             SpriteBundle {
-                texture: asset_server.load("ships/spaceCrusader.png"),
+                // TODO: Do not clone here.
+                texture: asset_server.load(enemy.clone().image),
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
                     window.height() / 2.,
@@ -119,7 +210,7 @@ fn spawn_enemy(
                 ),
                 ..default()
             },
-            Enemy,
+            enemy,
         ));
     }
 }
@@ -129,28 +220,28 @@ fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut sprite_position: Query<(&mut Player, &mut Transform)>,
 ) {
-    for (mut _player, mut transform) in &mut sprite_position {
+    for (player, mut transform) in &mut sprite_position {
         if keyboard_input.pressed(KeyCode::W) {
-            transform.translation.y += 150. * time.delta_seconds();
+            transform.translation.y += player.speed; //* time.delta_seconds();
         }
 
         if keyboard_input.pressed(KeyCode::S) {
-            transform.translation.y -= 150. * time.delta_seconds();
+            transform.translation.y -= player.speed; // * time.delta_seconds();
         }
 
         if keyboard_input.pressed(KeyCode::A) {
-            transform.translation.x -= 150. * time.delta_seconds();
+            transform.translation.x -= player.speed; // * time.delta_seconds();
         }
 
         if keyboard_input.pressed(KeyCode::D) {
-            transform.translation.x += 150. * time.delta_seconds();
+            transform.translation.x += player.speed; // * time.delta_seconds();
         }
     }
 }
 
 fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut Transform)>) {
-    for (mut _enemy, mut transform) in &mut sprite_position {
-        transform.translation.y -= 50. * time.delta_seconds();
+    for (enemy, mut transform) in &mut sprite_position {
+        transform.translation.y -= enemy.speed; // * time.delta_seconds();
     }
 }
 
@@ -165,7 +256,7 @@ fn enemy_collision(
     let player = player_query.single();
     let player_size = assets.get(player.2).unwrap().size();
 
-    for (enemy_entity, _enemy, pos, img) in &enemies_query {
+    for (enemy_entity, enemy, pos, img) in &enemies_query {
         let enemy_size = assets.get(img).unwrap().size();
 
         if collide(
@@ -176,7 +267,7 @@ fn enemy_collision(
         )
         .is_some()
         {
-            game.health -= 10;
+            game.health -= enemy.collision_damage;
             commands.entity(enemy_entity).despawn();
         }
     }
