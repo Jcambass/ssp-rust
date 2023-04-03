@@ -2,7 +2,10 @@
 
 use std::time::Duration;
 
-use bevy::{prelude::*, window::{PrimaryWindow, PresentMode}};
+use bevy::{
+    prelude::*,
+    window::{PresentMode, PrimaryWindow}, text,
+};
 use rand::Rng;
 
 const ORIGINAL_TARGET_FPS: f32 = 40.0;
@@ -27,9 +30,10 @@ fn main() {
         .add_startup_system(setup)
         .add_startup_system(setup_ui)
         .add_startup_system(setup_enemy_spawning)
-        .add_system(spawn_enemy)
         .add_system(player_movement)
+        .add_system(spawn_enemy)
         .add_system(enemy_movement)
+        .add_system(despawn_enemies)
         .add_system(enemy_collision)
         .add_system(update_health)
         .run();
@@ -42,9 +46,7 @@ struct Player {
 
 impl Player {
     pub fn new() -> Self {
-        Self {
-            speed: 5.618,
-        }
+        Self { speed: 5.618 }
     }
 }
 
@@ -59,7 +61,7 @@ struct Enemy {
 
 impl Enemy {
     pub fn random() -> Self {
-        let next_enemy_type =  rand::thread_rng().gen_range(0..100);
+        let next_enemy_type = rand::thread_rng().gen_range(0..100);
 
         if next_enemy_type < 45 {
             Self::trespasser()
@@ -73,19 +75,19 @@ impl Enemy {
     }
 
     pub fn big_ship() -> Self {
-        let speed =  rand::thread_rng().gen_range(0.971 - 0.03..0.971 + 0.034);
+        let speed = rand::thread_rng().gen_range(0.971 - 0.03..0.971 + 0.034);
 
         Self {
             image: String::from("ships/BigShip.png"),
             health: 100,
             speed: speed,
             collision_damage: 35,
-            bounty: 120
+            bounty: 120,
         }
     }
 
     pub fn dark_lord() -> Self {
-        let speed =  rand::thread_rng().gen_range(0.63 - 0.03..0.63 + 0.06);
+        let speed = rand::thread_rng().gen_range(0.63 - 0.03..0.63 + 0.06);
 
         Self {
             image: String::from("ships/darkLord.png"),
@@ -97,26 +99,26 @@ impl Enemy {
     }
 
     pub fn space_crusader() -> Self {
-        let speed =  rand::thread_rng().gen_range(1.001 - 0.04..1.001 + 0.04);
+        let speed = rand::thread_rng().gen_range(1.001 - 0.04..1.001 + 0.04);
 
         Self {
             image: String::from("ships/spaceCrusader.png"),
             health: 80,
             speed: speed,
             collision_damage: 55,
-            bounty: 180
+            bounty: 180,
         }
     }
 
     pub fn trespasser() -> Self {
-        let speed =  rand::thread_rng().gen_range(1.53 - 0.09..1.53 + 0.08);
+        let speed = rand::thread_rng().gen_range(1.53 - 0.09..1.53 + 0.08);
 
         Self {
             image: String::from("ships/trespasser.png"),
             health: 30,
             speed: speed,
             collision_damage: 13,
-            bounty: 35
+            bounty: 35,
         }
     }
 }
@@ -197,13 +199,14 @@ fn spawn_enemy(
     primary_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = primary_query.single();
-    let min_x_offset = -(window.width() / 2.0);
-    let max_x_offset = window.width() / 2.0;
 
     config.timer.tick(time.delta());
 
     if config.timer.finished() {
         let enemy = Enemy::random();
+
+        let min_x_offset = -(window.width() / 2.0);
+        let max_x_offset = window.width() / 2.0;
 
         commands.spawn((
             SpriteBundle {
@@ -211,7 +214,7 @@ fn spawn_enemy(
                 texture: asset_server.load(enemy.clone().image),
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
-                    window.height() / 2.,
+                    (window.height() / 2.) + 50.0, // TODO: Find a way to use asset size here.
                     0.,
                 ),
                 ..default()
@@ -226,36 +229,40 @@ fn player_movement(
     keyboard_input: Res<Input<KeyCode>>,
     mut sprite_position: Query<(&mut Player, &mut Transform, &Handle<Image>)>,
     assets: Res<Assets<Image>>,
-    primary_query: Query<&Window, With<PrimaryWindow>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let window = primary_query.single();
+    let window = window_query.single();
 
     for (player, mut transform, img_handle) in &mut sprite_position {
         let player_size = assets.get(img_handle).unwrap().size();
 
         if keyboard_input.pressed(KeyCode::W) {
-            let new_y = transform.translation.y + player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            let new_y =
+                transform.translation.y + player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
             if valid_move(transform.translation.x, new_y, window, player_size) {
                 transform.translation.y = new_y;
             }
         }
 
         if keyboard_input.pressed(KeyCode::S) {
-            let new_y = transform.translation.y - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            let new_y =
+                transform.translation.y - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
             if valid_move(transform.translation.x, new_y, window, player_size) {
                 transform.translation.y = new_y;
             }
         }
 
         if keyboard_input.pressed(KeyCode::A) {
-            let new_x = transform.translation.x - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            let new_x =
+                transform.translation.x - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
             if valid_move(new_x, transform.translation.y, window, player_size) {
                 transform.translation.x = new_x;
             }
         }
 
         if keyboard_input.pressed(KeyCode::D) {
-            let new_x = transform.translation.x + player.speed * time.delta_seconds()* ORIGINAL_TARGET_FPS;
+            let new_x =
+                transform.translation.x + player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
             if valid_move(new_x, transform.translation.y, window, player_size) {
                 transform.translation.x = new_x;
             }
@@ -274,8 +281,35 @@ fn valid_move(x: f32, y: f32, window: &Window, player_size: Vec2) -> bool {
 
 fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut Transform)>) {
     for (enemy, mut transform) in &mut sprite_position {
-        transform.translation.y -= enemy.speed  * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+        transform.translation.y -= enemy.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
     }
+}
+
+fn despawn_enemies(
+    mut commands: Commands,
+    mut sprite_position: Query<(Entity, &mut Enemy, &mut Transform, &Handle<Image>)>,
+    assets: Res<Assets<Image>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.single();
+
+    for (enemy_entity, _enemy, transform, img_handle) in &mut sprite_position {
+        let enemy_size = assets.get(img_handle).unwrap().size();
+
+        if enemy_past_bottom(
+            transform.translation.y,
+            window,
+            enemy_size,
+        ) {
+            commands.entity(enemy_entity).despawn();
+            println!("Despawned Enemy!")
+        }
+    }
+}
+
+fn enemy_past_bottom(y: f32, window: &Window, enemy_size: Vec2) -> bool {
+    let min_y = -(window.height() / 2.) - (enemy_size.y / 2.);
+    y < min_y
 }
 
 use bevy::sprite::collide_aabb::collide;
