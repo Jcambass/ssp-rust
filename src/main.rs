@@ -3,9 +3,12 @@
 use std::time::Duration;
 
 use bevy::{
+    asset,
     prelude::*,
-    window::{PresentMode, PrimaryWindow}, text,
+    text,
+    window::{PresentMode, PrimaryWindow},
 };
+use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 use rand::Rng;
 
 const ORIGINAL_TARGET_FPS: f32 = 40.0;
@@ -25,18 +28,56 @@ fn main() {
             }),
             ..default()
         }))
-        .insert_resource(Game { health: 100 })
+        .add_state::<AppState>()
+        .add_loading_state(LoadingState::new(AppState::Loading).continue_to_state(AppState::InGame))
+        .add_collection_to_loading_state::<_, MyAssets>(AppState::Loading)
+        .insert_resource(Game {
+            health: 100,
+            earth_health: 5000,
+        })
         .insert_resource(ClearColor(Color::BLACK))
-        .add_startup_system(setup)
-        .add_startup_system(setup_ui)
-        .add_startup_system(setup_enemy_spawning)
-        .add_system(player_movement)
-        .add_system(spawn_enemy)
-        .add_system(enemy_movement)
-        .add_system(despawn_enemies)
-        .add_system(enemy_collision)
-        .add_system(update_health)
+        .add_systems(
+            (setup, setup_ui, setup_enemy_spawning).in_schedule(OnEnter(AppState::InGame)),
+        )
+        .add_systems(
+            (
+                player_movement,
+                spawn_enemy,
+                enemy_movement,
+                despawn_enemies,
+                enemy_collision,
+                update_health,
+                check_game_over,
+            )
+                .in_set(OnUpdate(AppState::InGame)),
+        )
+        .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)))
         .run();
+}
+
+#[derive(States, PartialEq, Eq, Debug, Clone, Hash, Default)]
+enum AppState {
+    #[default]
+    Loading,
+    InGame,
+    Paused,
+    GameOver,
+}
+
+struct GameOverEvent;
+
+#[derive(AssetCollection, Resource)]
+struct MyAssets {
+    #[asset(path = "player.png")]
+    player: Handle<Image>,
+    #[asset(path = "ships/BigShip.png")]
+    big_ship: Handle<Image>,
+    #[asset(path = "ships/darkLord.png")]
+    dark_lord: Handle<Image>,
+    #[asset(path = "ships/spaceCrusader.png")]
+    space_crusader: Handle<Image>,
+    #[asset(path = "ships/trespasser.png")]
+    trespasser: Handle<Image>,
 }
 
 #[derive(Component)]
@@ -50,9 +91,17 @@ impl Player {
     }
 }
 
+#[derive(Clone)]
+enum ShipType {
+    BigShip,
+    DarkLord,
+    SpeedCrusader,
+    Trespasser,
+}
+
 #[derive(Component, Clone)]
 struct Enemy {
-    pub image: String,
+    pub ship_type: ShipType,
     pub health: u32,
     pub collision_damage: u32,
     pub bounty: u32,
@@ -78,7 +127,7 @@ impl Enemy {
         let speed = rand::thread_rng().gen_range(0.971 - 0.03..0.971 + 0.034);
 
         Self {
-            image: String::from("ships/BigShip.png"),
+            ship_type: ShipType::BigShip,
             health: 100,
             speed: speed,
             collision_damage: 35,
@@ -90,7 +139,7 @@ impl Enemy {
         let speed = rand::thread_rng().gen_range(0.63 - 0.03..0.63 + 0.06);
 
         Self {
-            image: String::from("ships/darkLord.png"),
+            ship_type: ShipType::DarkLord,
             health: 250,
             speed: speed,
             collision_damage: 75,
@@ -102,7 +151,7 @@ impl Enemy {
         let speed = rand::thread_rng().gen_range(1.001 - 0.04..1.001 + 0.04);
 
         Self {
-            image: String::from("ships/spaceCrusader.png"),
+            ship_type: ShipType::SpeedCrusader,
             health: 80,
             speed: speed,
             collision_damage: 55,
@@ -114,11 +163,20 @@ impl Enemy {
         let speed = rand::thread_rng().gen_range(1.53 - 0.09..1.53 + 0.08);
 
         Self {
-            image: String::from("ships/trespasser.png"),
+            ship_type: ShipType::Trespasser,
             health: 30,
             speed: speed,
             collision_damage: 13,
             bounty: 35,
+        }
+    }
+
+    pub fn image(&self, assets: Res<MyAssets>) -> Handle<Image> {
+        match self.ship_type {
+            ShipType::BigShip => assets.big_ship.clone(),
+            ShipType::DarkLord => assets.dark_lord.clone(),
+            ShipType::SpeedCrusader => assets.space_crusader.clone(),
+            ShipType::Trespasser => assets.trespasser.clone(),
         }
     }
 }
@@ -134,6 +192,7 @@ struct EnemySpawnConfig {
 #[derive(Resource)]
 struct Game {
     pub health: u32,
+    pub earth_health: u32,
 }
 
 fn setup_enemy_spawning(mut commands: Commands) {
@@ -174,11 +233,11 @@ fn setup_ui(
     ));
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
     commands.spawn(Camera2dBundle::default());
     commands.spawn((
         SpriteBundle {
-            texture: asset_server.load("player.png"),
+            texture: my_assets.player.clone(),
             transform: Transform::from_xyz(0., 0., 0.),
             ..default()
         },
@@ -195,8 +254,9 @@ fn spawn_enemy(
     mut commands: Commands,
     time: Res<Time>,
     mut config: ResMut<EnemySpawnConfig>,
-    asset_server: Res<AssetServer>,
     primary_query: Query<&Window, With<PrimaryWindow>>,
+    assets: Res<Assets<Image>>,
+    my_assets: Res<MyAssets>,
 ) {
     let window = primary_query.single();
 
@@ -204,17 +264,20 @@ fn spawn_enemy(
 
     if config.timer.finished() {
         let enemy = Enemy::random();
+        let img_handle = enemy.clone().image(my_assets);
+        let img_size = assets.get(&img_handle).unwrap().size();
 
-        let min_x_offset = -(window.width() / 2.0);
-        let max_x_offset = window.width() / 2.0;
+        // TODO: include asset size here.
+        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
+        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
 
         commands.spawn((
             SpriteBundle {
                 // TODO: Do not clone here.
-                texture: asset_server.load(enemy.clone().image),
+                texture: img_handle,
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
-                    (window.height() / 2.) + 50.0, // TODO: Find a way to use asset size here.
+                    (window.height() / 2.) + (img_size.y / 2.),
                     0.,
                 ),
                 ..default()
@@ -296,11 +359,7 @@ fn despawn_enemies(
     for (enemy_entity, _enemy, transform, img_handle) in &mut sprite_position {
         let enemy_size = assets.get(img_handle).unwrap().size();
 
-        if enemy_past_bottom(
-            transform.translation.y,
-            window,
-            enemy_size,
-        ) {
+        if enemy_past_bottom(transform.translation.y, window, enemy_size) {
             commands.entity(enemy_entity).despawn();
             println!("Despawned Enemy!")
         }
@@ -334,8 +393,52 @@ fn enemy_collision(
         )
         .is_some()
         {
-            game.health -= enemy.collision_damage;
+            game.health = if let Some(i) = game.health.checked_sub(enemy.collision_damage) {
+                i
+            } else {
+                0
+            };
             commands.entity(enemy_entity).despawn();
         }
     }
+}
+
+fn check_game_over(
+    game: Res<Game>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    if game.health <= 0 || game.earth_health <= 0 {
+        next_state.set(AppState::GameOver);
+    }
+}
+
+fn gameover_screen(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    primary_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = primary_query.single();
+
+    let text_style = TextStyle {
+        font: asset_server.load("fonts/impact.ttf"),
+        font_size: 48.0,
+        color: Color::WHITE,
+    };
+
+    commands.spawn((
+        TextBundle::from_sections([
+            TextSection::new("GAME OVER! ", text_style.clone()),
+            TextSection::new("YOUR SCORE: 0", text_style.clone()),
+        ])
+        .with_text_alignment(TextAlignment::Center)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            position: UiRect {
+                bottom: Val::Px(window.height() / 2.),
+                left: Val::Px(window.width() / 2.),
+                ..default()
+            },
+            ..default()
+        }),
+    ));
 }
