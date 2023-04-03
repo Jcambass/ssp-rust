@@ -2,16 +2,28 @@
 
 use std::time::Duration;
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, window::{PrimaryWindow, PresentMode}};
 use rand::Rng;
+
+const ORIGINAL_TARGET_FPS: f32 = 40.0;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(bevy_framepace::FramepacePlugin)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "SpaceShipProject Rust Edition!".into(),
+                resolution: (1120., 605.).into(),
+                present_mode: PresentMode::AutoVsync,
+                // Tells bevy to resize the window according to the available canvas
+                fit_canvas_to_parent: true,
+                // Tells bevy not to override default event handling, like F5, Ctrl+R etc.
+                prevent_default_event_handling: false,
+                ..default()
+            }),
+            ..default()
+        }))
         .insert_resource(Game { health: 100 })
         .insert_resource(ClearColor(Color::BLACK))
-        .add_startup_system(limit_fps)
         .add_startup_system(setup)
         .add_startup_system(setup_ui)
         .add_startup_system(setup_enemy_spawning)
@@ -122,12 +134,6 @@ struct Game {
     pub health: u32,
 }
 
-// TODO: Remove FPS Limit and use correct speed settings
-fn limit_fps(mut settings: ResMut<bevy_framepace::FramepaceSettings>,) {
-    use bevy_framepace::Limiter;
-    settings.limiter = Limiter::from_framerate(40.0);
-}
-
 fn setup_enemy_spawning(mut commands: Commands) {
     commands.insert_resource(EnemySpawnConfig {
         timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
@@ -218,30 +224,57 @@ fn spawn_enemy(
 fn player_movement(
     time: Res<Time>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut sprite_position: Query<(&mut Player, &mut Transform)>,
+    mut sprite_position: Query<(&mut Player, &mut Transform, &Handle<Image>)>,
+    assets: Res<Assets<Image>>,
+    primary_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    for (player, mut transform) in &mut sprite_position {
+    let window = primary_query.single();
+
+    for (player, mut transform, img_handle) in &mut sprite_position {
+        let player_size = assets.get(img_handle).unwrap().size();
+
         if keyboard_input.pressed(KeyCode::W) {
-            transform.translation.y += player.speed; //* time.delta_seconds();
+            let new_y = transform.translation.y + player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            if valid_move(transform.translation.x, new_y, window, player_size) {
+                transform.translation.y = new_y;
+            }
         }
 
         if keyboard_input.pressed(KeyCode::S) {
-            transform.translation.y -= player.speed; // * time.delta_seconds();
+            let new_y = transform.translation.y - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            if valid_move(transform.translation.x, new_y, window, player_size) {
+                transform.translation.y = new_y;
+            }
         }
 
         if keyboard_input.pressed(KeyCode::A) {
-            transform.translation.x -= player.speed; // * time.delta_seconds();
+            let new_x = transform.translation.x - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            if valid_move(new_x, transform.translation.y, window, player_size) {
+                transform.translation.x = new_x;
+            }
         }
 
         if keyboard_input.pressed(KeyCode::D) {
-            transform.translation.x += player.speed; // * time.delta_seconds();
+            let new_x = transform.translation.x + player.speed * time.delta_seconds()* ORIGINAL_TARGET_FPS;
+            if valid_move(new_x, transform.translation.y, window, player_size) {
+                transform.translation.x = new_x;
+            }
         }
     }
 }
 
+fn valid_move(x: f32, y: f32, window: &Window, player_size: Vec2) -> bool {
+    let min_x = -(window.width() / 2.) + (player_size.x / 2.);
+    let max_x = (window.width() / 2.) - (player_size.x / 2.);
+
+    let min_y = -(window.height() / 2.) + (player_size.y / 2.);
+    let max_y = (window.height() / 2.) - (player_size.y / 2.);
+    x >= min_x && x <= max_x && y >= min_y && y <= max_y
+}
+
 fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut Transform)>) {
     for (enemy, mut transform) in &mut sprite_position {
-        transform.translation.y -= enemy.speed; // * time.delta_seconds();
+        transform.translation.y -= enemy.speed  * time.delta_seconds() * ORIGINAL_TARGET_FPS;
     }
 }
 
