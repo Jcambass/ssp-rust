@@ -41,9 +41,7 @@ fn main() {
             earth_health: 5000,
         })
         .insert_resource(ClearColor(Color::BLACK))
-        .add_systems(
-            (setup, setup_ui, setup_enemy_spawning).in_schedule(OnEnter(AppState::InGame)),
-        )
+        .add_systems((setup, setup_ui, setup_enemy_spawning).in_schedule(OnEnter(AppState::InGame)))
         .add_systems(
             (
                 player_movement,
@@ -191,6 +189,9 @@ struct HealthText;
 #[derive(Component)]
 struct EarthHealthText;
 
+#[derive(Component)]
+struct ScoreText;
+
 #[derive(Resource)]
 struct EnemySpawnConfig {
     timer: Timer,
@@ -221,41 +222,57 @@ fn setup_ui(
         color: Color::WHITE,
     };
 
+    // No idea why the text of the flex box ones is not centerd until I add this one with PositionType::Absolute.
     commands.spawn((
         TextBundle::from_sections([
-            TextSection::new("Health: ", text_style.clone()),
-            TextSection::new("100", text_style.clone()),
+            TextSection::new("Score: ", text_style.clone()),
+            TextSection::new("0", text_style.clone()),
         ])
         .with_text_alignment(TextAlignment::Center)
         .with_style(Style {
             position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(0.0),
-                left: Val::Px(window.width() / 2.),
-                ..default()
-            },
+            position: UiRect::default(),
             ..default()
         }),
-        HealthText,
+        ScoreText,
     ));
 
-    commands.spawn((
-        TextBundle::from_sections([
-            TextSection::new("Earth Health: ", text_style.clone()),
-            TextSection::new("5000", text_style.clone()),
-        ])
-        .with_text_alignment(TextAlignment::Center)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            position: UiRect {
-                top: Val::Px(0.0),
-                left: Val::Px(window.width() / 2.),
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                size: Size::width(Val::Percent(100.0)),
+                flex_direction: FlexDirection::Column,
+                justify_content: JustifyContent::SpaceBetween,
+                align_items: AlignItems::Center,
                 ..default()
             },
             ..default()
-        }),
-        EarthHealthText,
-    ));
+        })
+        .with_children(|parent| {
+            parent.spawn((
+                TextBundle::from_sections([
+                    TextSection::new("Earth Health: ", text_style.clone()),
+                    TextSection::new("5000", text_style.clone()),
+                ])
+                .with_text_alignment(TextAlignment::Center)
+                .with_style(Style {
+                    ..default()
+                }),
+                EarthHealthText,
+            ));
+
+            parent.spawn((
+                TextBundle::from_sections([
+                    TextSection::new("Health: ", text_style.clone()),
+                    TextSection::new("100", text_style.clone()),
+                ])
+                .with_text_alignment(TextAlignment::Center)
+                .with_style(Style {
+                    ..default()
+                }),
+                HealthText,
+            ));
+        });
 }
 
 fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
@@ -439,10 +456,7 @@ fn enemy_collision(
     }
 }
 
-fn check_game_over(
-    game: Res<Game>,
-    mut next_state: ResMut<NextState<AppState>>,
-) {
+fn check_game_over(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>) {
     if game.health <= 0 || game.earth_health <= 0 {
         next_state.set(AppState::GameOver);
     }
@@ -455,26 +469,25 @@ fn gameover_screen(
 ) {
     let window = primary_query.single();
 
+    // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
     let text_style = TextStyle {
         font: asset_server.load("fonts/impact.ttf"),
-        font_size: 48.0,
+        font_size: 42.0,
         color: Color::WHITE,
     };
 
-    commands.spawn((
-        TextBundle::from_sections([
-            TextSection::new("GAME OVER! ", text_style.clone()),
-            TextSection::new("YOUR SCORE: 0", text_style.clone()),
-        ])
-        .with_text_alignment(TextAlignment::Center)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            position: UiRect {
-                bottom: Val::Px(window.height() / 2.),
-                left: Val::Px(window.width() / 2.),
-                ..default()
-            },
+    commands.spawn((TextBundle::from_sections([
+        TextSection::new("GAME OVER! ", text_style.clone()),
+        TextSection::new("YOUR SCORE: 0", text_style.clone()),
+    ])
+    .with_text_alignment(TextAlignment::Center)
+    .with_style(Style {
+        position_type: PositionType::Absolute,
+        position: UiRect {
+            bottom: Val::Px(window.height() / 2.),
+            left: Val::Px(window.width() / 2.),
             ..default()
-        }),
-    ));
+        },
+        ..default()
+    }),));
 }
