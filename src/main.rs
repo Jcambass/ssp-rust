@@ -1,13 +1,15 @@
 //! Renders a 2D scene containing a single, moving sprite.
 
-use std::time::Duration;
-
 use bevy::{
     prelude::*,
     window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 use rand::Rng;
+
+pub mod ui;
+pub mod player_control;
+pub mod enemy_spawning;
 
 const EARTH_HEALTH: u32 = 5000;
 const PLAYER_HEALTH: u32 = 100;
@@ -43,21 +45,20 @@ fn main() {
             score: 0,
         })
         .insert_resource(ClearColor(Color::BLACK))
-        .add_systems((setup, setup_ui, setup_enemy_spawning).in_schedule(OnEnter(AppState::InGame)))
+        .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
         .add_systems(
             (
-                player_movement,
-                spawn_enemy,
                 enemy_movement,
                 despawn_enemies,
                 enemy_collision,
-                update_stats,
                 check_game_over,
                 check_game_won.after(check_game_over),
             )
                 .in_set(OnUpdate(AppState::InGame)),
         )
-        .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)))
+        .add_plugin(enemy_spawning::EnemySpawningPlugin)
+        .add_plugin(player_control::PlayerControlPlugin)
+        .add_plugin(ui::UiOverlayPlugin)
         .run();
 }
 
@@ -95,6 +96,7 @@ impl Player {
         Self { speed: 5.618 }
     }
 }
+
 
 #[derive(Clone)]
 enum ShipType {
@@ -186,98 +188,11 @@ impl Enemy {
     }
 }
 
-#[derive(Component)]
-struct HealthText;
-
-#[derive(Component)]
-struct EarthHealthText;
-
-#[derive(Component)]
-struct ScoreText;
-
-#[derive(Component)]
-struct GameOverText;
-
-#[derive(Resource)]
-struct EnemySpawnConfig {
-    timer: Timer,
-}
-
 #[derive(Resource)]
 struct Game {
     pub health: u32,
     pub earth_health: u32,
     pub score: u32,
-}
-
-fn setup_enemy_spawning(mut commands: Commands) {
-    commands.insert_resource(EnemySpawnConfig {
-        timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
-    })
-}
-
-fn setup_ui(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
-    let text_style = TextStyle {
-        font: asset_server.load("fonts/impact.ttf"),
-        font_size: 32.0,
-        color: Color::WHITE,
-    };
-
-    // No idea why the text of the flex box ones is not centerd until I add this one with PositionType::Absolute.
-    commands.spawn((
-        TextBundle::from_sections([
-            TextSection::new("Score: ", text_style.clone()),
-            TextSection::new("0", text_style.clone()),
-        ])
-        .with_text_alignment(TextAlignment::Center)
-        .with_style(Style {
-            position_type: PositionType::Absolute,
-            position: UiRect::default(),
-            ..default()
-        }),
-        ScoreText,
-    ));
-
-    commands
-        .spawn(NodeBundle {
-            style: Style {
-                size: Size::width(Val::Percent(100.0)),
-                flex_direction: FlexDirection::Column,
-                justify_content: JustifyContent::SpaceBetween,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn((
-                TextBundle::from_sections([
-                    TextSection::new("Earth Health: ", text_style.clone()),
-                    TextSection::new(EARTH_HEALTH.to_string(), text_style.clone()),
-                ])
-                .with_text_alignment(TextAlignment::Center),
-                EarthHealthText,
-            ));
-
-            parent.spawn((
-                TextBundle::from_sections([
-                ])
-                .with_text_alignment(TextAlignment::Center),
-                GameOverText,
-            ));
-
-            parent.spawn((
-                TextBundle::from_sections([
-                    TextSection::new("Health: ", text_style.clone()),
-                    TextSection::new(PLAYER_HEALTH.to_string(), text_style.clone()),
-                ])
-                .with_text_alignment(TextAlignment::Center),
-                HealthText,
-            ));
-        });
 }
 
 fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
@@ -292,109 +207,6 @@ fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
     ));
 }
 
-fn update_stats(
-    mut set: ParamSet<(
-        Query<&mut Text, With<HealthText>>,
-        Query<&mut Text, With<EarthHealthText>>,
-        Query<&mut Text, With<ScoreText>>,
-    )>,
-    game: Res<Game>,
-) {
-    set.p0().single_mut().sections[1].value = format!("{}", game.health);
-    set.p1().single_mut().sections[1].value = format!("{}", game.earth_health);
-    set.p2().single_mut().sections[1].value = format!("{}", game.score);
-}
-
-fn spawn_enemy(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut config: ResMut<EnemySpawnConfig>,
-    primary_query: Query<&Window, With<PrimaryWindow>>,
-    assets: Res<Assets<Image>>,
-    my_assets: Res<MyAssets>,
-) {
-    let window = primary_query.single();
-
-    config.timer.tick(time.delta());
-
-    if config.timer.finished() {
-        let enemy = Enemy::random();
-        let img_handle = enemy.clone().image(my_assets);
-        let img_size = assets.get(&img_handle).unwrap().size();
-
-        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
-        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
-
-        commands.spawn((
-            SpriteBundle {
-                // TODO: Do not clone here.
-                texture: img_handle,
-                transform: Transform::from_xyz(
-                    rand::thread_rng().gen_range(min_x_offset..max_x_offset),
-                    (window.height() / 2.) + (img_size.y / 2.),
-                    0.,
-                ),
-                ..default()
-            },
-            enemy,
-        ));
-    }
-}
-
-fn player_movement(
-    time: Res<Time>,
-    keyboard_input: Res<Input<KeyCode>>,
-    mut sprite_position: Query<(&mut Player, &mut Transform, &Handle<Image>)>,
-    assets: Res<Assets<Image>>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
-) {
-    let window = window_query.single();
-
-    for (player, mut transform, img_handle) in &mut sprite_position {
-        let player_size = assets.get(img_handle).unwrap().size();
-
-        if keyboard_input.pressed(KeyCode::W) {
-            let new_y =
-                transform.translation.y + player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
-            if valid_move(transform.translation.x, new_y, window, player_size) {
-                transform.translation.y = new_y;
-            }
-        }
-
-        if keyboard_input.pressed(KeyCode::S) {
-            let new_y =
-                transform.translation.y - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
-            if valid_move(transform.translation.x, new_y, window, player_size) {
-                transform.translation.y = new_y;
-            }
-        }
-
-        if keyboard_input.pressed(KeyCode::A) {
-            let new_x =
-                transform.translation.x - player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
-            if valid_move(new_x, transform.translation.y, window, player_size) {
-                transform.translation.x = new_x;
-            }
-        }
-
-        if keyboard_input.pressed(KeyCode::D) {
-            let new_x =
-                transform.translation.x + player.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
-            if valid_move(new_x, transform.translation.y, window, player_size) {
-                transform.translation.x = new_x;
-            }
-        }
-    }
-}
-
-fn valid_move(x: f32, y: f32, window: &Window, player_size: Vec2) -> bool {
-    let min_x = -(window.width() / 2.) + (player_size.x / 2.);
-    let max_x = (window.width() / 2.) - (player_size.x / 2.);
-
-    let min_y = -(window.height() / 2.) + (player_size.y / 2.);
-    let max_y = (window.height() / 2.) - (player_size.y / 2.);
-    x >= min_x && x <= max_x && y >= min_y && y <= max_y
-}
 
 fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut Transform)>) {
     for (enemy, mut transform) in &mut sprite_position {
@@ -476,24 +288,4 @@ fn check_game_won(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>) 
     if game.score >= 8000 {
         next_state.set(AppState::GameWon);
     }
-}
-
-fn gameover_screen(
-    mut query: Query<&mut Text, With<GameOverText>>,
-    asset_server: Res<AssetServer>,
-    game: Res<Game>,
-) {
-    // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
-    let text_style = TextStyle {
-        font: asset_server.load("fonts/impact.ttf"),
-        font_size: 42.0,
-        color: Color::WHITE,
-    };
-
-    let mut text = query.single_mut();
-    text.sections = vec![
-        TextSection::new("GAME OVER!\n", text_style.clone()),
-        TextSection::new("YOUR SCORE: ", text_style.clone()),
-        TextSection::new(game.score.to_string(), text_style.clone()),
-    ];
 }
