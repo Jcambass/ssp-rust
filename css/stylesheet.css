@@ -1,0 +1,18 @@
+body{
+	background-color: #303030;
+}
+#title{
+	width: 60%;
+	display: block;
+	color: white;
+	margin: auto;
+	font-family: Segoe UI;
+	font-size: small;
+	text-align: center;
+}
+
+#mainScreen{
+	background-color: white;
+	display: block;
+	margin: auto;
+}

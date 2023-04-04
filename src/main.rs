@@ -13,16 +13,21 @@ use rand::Rng;
 
 const ORIGINAL_TARGET_FPS: f32 = 40.0;
 
+// TODO: Ensure resizing window doesn't break things like enemy spawning/despawning, player movement or earth health.
+// Moving Player certainly needs some tweaking since he can get stuck if the window is resized into the player.
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "SpaceShipProject Rust Edition!".into(),
-                resolution: (1120., 605.).into(),
                 present_mode: PresentMode::AutoVsync,
-                // Tells bevy to resize the window according to the available canvas
-                fit_canvas_to_parent: true,
-                // Tells bevy not to override default event handling, like F5, Ctrl+R etc.
+                resolution: (1120., 605.).into(),
+                // Tell wasm to use a specific canvas.
+                canvas: Some(String::from("#mainScreen")),
+                // Tells wasm NOT to resize the window according to the available canvas.
+                fit_canvas_to_parent: false,
+                // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
                 prevent_default_event_handling: false,
                 ..default()
             }),
@@ -47,6 +52,7 @@ fn main() {
                 despawn_enemies,
                 enemy_collision,
                 update_health,
+                update_earth_health,
                 check_game_over,
             )
                 .in_set(OnUpdate(AppState::InGame)),
@@ -63,8 +69,6 @@ enum AppState {
     Paused,
     GameOver,
 }
-
-struct GameOverEvent;
 
 #[derive(AssetCollection, Resource)]
 struct MyAssets {
@@ -184,6 +188,9 @@ impl Enemy {
 #[derive(Component)]
 struct HealthText;
 
+#[derive(Component)]
+struct EarthHealthText;
+
 #[derive(Resource)]
 struct EnemySpawnConfig {
     timer: Timer,
@@ -231,6 +238,24 @@ fn setup_ui(
         }),
         HealthText,
     ));
+
+    commands.spawn((
+        TextBundle::from_sections([
+            TextSection::new("Earth Health: ", text_style.clone()),
+            TextSection::new("5000", text_style.clone()),
+        ])
+        .with_text_alignment(TextAlignment::Center)
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            position: UiRect {
+                top: Val::Px(0.0),
+                left: Val::Px(window.width() / 2.),
+                ..default()
+            },
+            ..default()
+        }),
+        EarthHealthText,
+    ));
 }
 
 fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
@@ -250,6 +275,11 @@ fn update_health(mut query: Query<&mut Text, With<HealthText>>, game: Res<Game>)
     text.sections[1].value = format!("{}", game.health);
 }
 
+fn update_earth_health(mut query: Query<&mut Text, With<EarthHealthText>>, game: Res<Game>) {
+    let mut text = query.single_mut();
+    text.sections[1].value = format!("{}", game.earth_health);
+}
+
 fn spawn_enemy(
     mut commands: Commands,
     time: Res<Time>,
@@ -267,7 +297,6 @@ fn spawn_enemy(
         let img_handle = enemy.clone().image(my_assets);
         let img_size = assets.get(&img_handle).unwrap().size();
 
-        // TODO: include asset size here.
         let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
         let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
 
@@ -350,16 +379,23 @@ fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut 
 
 fn despawn_enemies(
     mut commands: Commands,
+    mut game: ResMut<Game>,
     mut sprite_position: Query<(Entity, &mut Enemy, &mut Transform, &Handle<Image>)>,
     assets: Res<Assets<Image>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = window_query.single();
 
-    for (enemy_entity, _enemy, transform, img_handle) in &mut sprite_position {
+    for (enemy_entity, enemy, transform, img_handle) in &mut sprite_position {
         let enemy_size = assets.get(img_handle).unwrap().size();
 
         if enemy_past_bottom(transform.translation.y, window, enemy_size) {
+            game.earth_health = if let Some(i) = game.earth_health.checked_sub(enemy.bounty) {
+                i
+            } else {
+                0
+            };
+
             commands.entity(enemy_entity).despawn();
             println!("Despawned Enemy!")
         }
