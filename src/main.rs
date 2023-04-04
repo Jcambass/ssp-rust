@@ -48,7 +48,6 @@ fn main() {
         .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
         .add_systems(
             (
-                enemy_movement,
                 despawn_enemies,
                 enemy_collision,
                 check_game_over,
@@ -96,7 +95,6 @@ impl Player {
         Self { speed: 5.618 }
     }
 }
-
 
 #[derive(Clone)]
 enum ShipType {
@@ -207,12 +205,6 @@ fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
     ));
 }
 
-
-fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut Transform)>) {
-    for (enemy, mut transform) in &mut sprite_position {
-        transform.translation.y -= enemy.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
-    }
-}
 
 fn despawn_enemies(
     mut commands: Commands,

@@ -3,7 +3,10 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 
-use crate::{MyAssets, AppState, Enemy};
+use crate::{MyAssets, AppState, Enemy, ORIGINAL_TARGET_FPS};
+
+const MIN_SPAWN_SECONDS: f32 = 1.0;
+const MAX_SPAWN_SECONDS: f32 = 5.5;
 
 pub struct EnemySpawningPlugin;
 
@@ -11,7 +14,10 @@ impl Plugin for EnemySpawningPlugin {
     fn build(&self, app: &mut App) {
         app
         .add_system(setup_enemy_spawning.in_schedule(OnEnter(AppState::InGame)))
-        .add_system(spawn_enemy.in_set(OnUpdate(AppState::InGame)));
+        .add_systems((
+            spawn_enemy,
+            enemy_movement,
+        ).in_set(OnUpdate(AppState::InGame)));
     }
 }
 
@@ -22,7 +28,7 @@ struct EnemySpawnConfig {
 
 fn setup_enemy_spawning(mut commands: Commands) {
     commands.insert_resource(EnemySpawnConfig {
-        timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
+        timer: Timer::new(Duration::from_secs_f32(random_spawn_time()), TimerMode::Once),
     })
 }
 
@@ -39,6 +45,8 @@ fn spawn_enemy(
     config.timer.tick(time.delta());
 
     if config.timer.finished() {
+        config.timer =  Timer::new(Duration::from_secs_f32(random_spawn_time()), TimerMode::Once);
+
         let enemy = Enemy::random();
         let img_handle = enemy.clone().image(my_assets);
         let img_size = assets.get(&img_handle).unwrap().size();
@@ -59,5 +67,16 @@ fn spawn_enemy(
             },
             enemy,
         ));
+    }
+}
+
+fn random_spawn_time() -> f32 {
+    rand::thread_rng().gen_range(MIN_SPAWN_SECONDS..=MAX_SPAWN_SECONDS)
+}
+
+
+fn enemy_movement(time: Res<Time>, mut sprite_position: Query<(&mut Enemy, &mut Transform)>) {
+    for (enemy, mut transform) in &mut sprite_position {
+        transform.translation.y -= enemy.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
     }
 }
