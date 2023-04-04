@@ -3,13 +3,14 @@
 use std::time::Duration;
 
 use bevy::{
-    asset,
     prelude::*,
-    text,
     window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 use rand::Rng;
+
+const EARTH_HEALTH: u32 = 5000;
+const PLAYER_HEALTH: u32 = 100;
 
 const ORIGINAL_TARGET_FPS: f32 = 40.0;
 
@@ -37,8 +38,9 @@ fn main() {
         .add_loading_state(LoadingState::new(AppState::Loading).continue_to_state(AppState::InGame))
         .add_collection_to_loading_state::<_, MyAssets>(AppState::Loading)
         .insert_resource(Game {
-            health: 100,
-            earth_health: 5000,
+            health: PLAYER_HEALTH,
+            earth_health: EARTH_HEALTH,
+            score: 0,
         })
         .insert_resource(ClearColor(Color::BLACK))
         .add_systems((setup, setup_ui, setup_enemy_spawning).in_schedule(OnEnter(AppState::InGame)))
@@ -49,9 +51,9 @@ fn main() {
                 enemy_movement,
                 despawn_enemies,
                 enemy_collision,
-                update_health,
-                update_earth_health,
+                update_stats,
                 check_game_over,
+                check_game_won.after(check_game_over),
             )
                 .in_set(OnUpdate(AppState::InGame)),
         )
@@ -66,6 +68,7 @@ enum AppState {
     InGame,
     Paused,
     GameOver,
+    GameWon,
 }
 
 #[derive(AssetCollection, Resource)]
@@ -192,6 +195,9 @@ struct EarthHealthText;
 #[derive(Component)]
 struct ScoreText;
 
+#[derive(Component)]
+struct GameOverText;
+
 #[derive(Resource)]
 struct EnemySpawnConfig {
     timer: Timer,
@@ -201,21 +207,19 @@ struct EnemySpawnConfig {
 struct Game {
     pub health: u32,
     pub earth_health: u32,
+    pub score: u32,
 }
 
 fn setup_enemy_spawning(mut commands: Commands) {
     commands.insert_resource(EnemySpawnConfig {
-        timer: Timer::new(Duration::from_secs(10), TimerMode::Repeating),
+        timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
     })
 }
 
 fn setup_ui(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    primary_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let window = primary_query.single();
-
     let text_style = TextStyle {
         font: asset_server.load("fonts/impact.ttf"),
         font_size: 32.0,
@@ -252,24 +256,25 @@ fn setup_ui(
             parent.spawn((
                 TextBundle::from_sections([
                     TextSection::new("Earth Health: ", text_style.clone()),
-                    TextSection::new("5000", text_style.clone()),
+                    TextSection::new(EARTH_HEALTH.to_string(), text_style.clone()),
                 ])
-                .with_text_alignment(TextAlignment::Center)
-                .with_style(Style {
-                    ..default()
-                }),
+                .with_text_alignment(TextAlignment::Center),
                 EarthHealthText,
             ));
 
             parent.spawn((
                 TextBundle::from_sections([
-                    TextSection::new("Health: ", text_style.clone()),
-                    TextSection::new("100", text_style.clone()),
                 ])
-                .with_text_alignment(TextAlignment::Center)
-                .with_style(Style {
-                    ..default()
-                }),
+                .with_text_alignment(TextAlignment::Center),
+                GameOverText,
+            ));
+
+            parent.spawn((
+                TextBundle::from_sections([
+                    TextSection::new("Health: ", text_style.clone()),
+                    TextSection::new(PLAYER_HEALTH.to_string(), text_style.clone()),
+                ])
+                .with_text_alignment(TextAlignment::Center),
                 HealthText,
             ));
         });
@@ -287,14 +292,17 @@ fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
     ));
 }
 
-fn update_health(mut query: Query<&mut Text, With<HealthText>>, game: Res<Game>) {
-    let mut text = query.single_mut();
-    text.sections[1].value = format!("{}", game.health);
-}
-
-fn update_earth_health(mut query: Query<&mut Text, With<EarthHealthText>>, game: Res<Game>) {
-    let mut text = query.single_mut();
-    text.sections[1].value = format!("{}", game.earth_health);
+fn update_stats(
+    mut set: ParamSet<(
+        Query<&mut Text, With<HealthText>>,
+        Query<&mut Text, With<EarthHealthText>>,
+        Query<&mut Text, With<ScoreText>>,
+    )>,
+    game: Res<Game>,
+) {
+    set.p0().single_mut().sections[1].value = format!("{}", game.health);
+    set.p1().single_mut().sections[1].value = format!("{}", game.earth_health);
+    set.p2().single_mut().sections[1].value = format!("{}", game.score);
 }
 
 fn spawn_enemy(
@@ -451,6 +459,8 @@ fn enemy_collision(
             } else {
                 0
             };
+
+            game.score += enemy.bounty;
             commands.entity(enemy_entity).despawn();
         }
     }
@@ -462,13 +472,17 @@ fn check_game_over(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>)
     }
 }
 
-fn gameover_screen(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    primary_query: Query<&Window, With<PrimaryWindow>>,
-) {
-    let window = primary_query.single();
+fn check_game_won(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>) {
+    if game.score >= 8000 {
+        next_state.set(AppState::GameWon);
+    }
+}
 
+fn gameover_screen(
+    mut query: Query<&mut Text, With<GameOverText>>,
+    asset_server: Res<AssetServer>,
+    game: Res<Game>,
+) {
     // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
     let text_style = TextStyle {
         font: asset_server.load("fonts/impact.ttf"),
@@ -476,18 +490,10 @@ fn gameover_screen(
         color: Color::WHITE,
     };
 
-    commands.spawn((TextBundle::from_sections([
-        TextSection::new("GAME OVER! ", text_style.clone()),
-        TextSection::new("YOUR SCORE: 0", text_style.clone()),
-    ])
-    .with_text_alignment(TextAlignment::Center)
-    .with_style(Style {
-        position_type: PositionType::Absolute,
-        position: UiRect {
-            bottom: Val::Px(window.height() / 2.),
-            left: Val::Px(window.width() / 2.),
-            ..default()
-        },
-        ..default()
-    }),));
+    let mut text = query.single_mut();
+    text.sections = vec![
+        TextSection::new("GAME OVER!\n", text_style.clone()),
+        TextSection::new("YOUR SCORE: ", text_style.clone()),
+        TextSection::new(game.score.to_string(), text_style.clone()),
+    ];
 }
