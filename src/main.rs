@@ -10,9 +10,13 @@ use rand::Rng;
 pub mod ui;
 pub mod player_control;
 pub mod enemy_spawning;
+pub mod backdrop;
 
 const EARTH_HEALTH: u32 = 5000;
 const PLAYER_HEALTH: u32 = 100;
+
+const BACKGROUND_LAYER: f32 = 0.0;
+const ACTOR_LAYER: f32 = 1.0;
 
 const ORIGINAL_TARGET_FPS: f32 = 40.0;
 
@@ -44,7 +48,6 @@ fn main() {
             earth_health: EARTH_HEALTH,
             score: 0,
         })
-        .insert_resource(ClearColor(Color::BLACK))
         .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
         .add_systems(
             (
@@ -55,6 +58,7 @@ fn main() {
             )
                 .in_set(OnUpdate(AppState::InGame)),
         )
+        .add_plugin(backdrop::BackdropPlugin)
         .add_plugin(enemy_spawning::EnemySpawningPlugin)
         .add_plugin(player_control::PlayerControlPlugin)
         .add_plugin(ui::UiOverlayPlugin)
@@ -83,6 +87,8 @@ struct MyAssets {
     space_crusader: Handle<Image>,
     #[asset(path = "ships/trespasser.png")]
     trespasser: Handle<Image>,
+    #[asset(path = "backdrop/star.png")]
+    star: Handle<Image>,
 }
 
 #[derive(Component)]
@@ -198,13 +204,12 @@ fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
     commands.spawn((
         SpriteBundle {
             texture: my_assets.player.clone(),
-            transform: Transform::from_xyz(0., 0., 0.),
+            transform: Transform::from_xyz(0., 0., ACTOR_LAYER),
             ..default()
         },
         Player::new(),
     ));
 }
-
 
 fn despawn_enemies(
     mut commands: Commands,

@@ -1,6 +1,6 @@
 - Spawn stars.
 - Spawn planets.
-- Spawn stats & planets with specific timer.
+- Spawn stars & planets with specific timer.
 - Enemy Weapons.
 - Player shoot.
 - Player shoot damages enemy.
@@ -10,5 +10,6 @@
 - Pausing game.
 - Starting message.
 - Game Won message.
-- Game over message.
 - Explosion Animation.
+- Make sure stars are same size as original.
+- Make sure fonts are the same size as original.
