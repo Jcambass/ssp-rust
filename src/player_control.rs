@@ -6,8 +6,7 @@ pub struct PlayerControlPlugin;
 
 impl Plugin for PlayerControlPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_system(player_movement.in_set(OnUpdate(AppState::InGame)));
+        app.add_system(player_movement.in_set(OnUpdate(AppState::InGame)));
     }
 }
 

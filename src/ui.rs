@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{Game, PLAYER_HEALTH, EARTH_HEALTH, AppState};
+use crate::{AppState, Game, EARTH_HEALTH, PLAYER_HEALTH};
 
 pub struct UiOverlayPlugin;
 
 impl Plugin for UiOverlayPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_system(setup_ui.in_schedule(OnEnter(AppState::InGame)))
+        app.add_system(setup_ui.in_schedule(OnEnter(AppState::InGame)))
             .add_system(update_stats.in_set(OnUpdate(AppState::InGame)))
             .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)));
     }
@@ -25,10 +24,7 @@ struct ScoreText;
 #[derive(Component)]
 struct GameOverText;
 
-fn setup_ui(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let text_style = TextStyle {
         font: asset_server.load("fonts/impact.ttf"),
         font_size: 32.0,
@@ -72,9 +68,7 @@ fn setup_ui(
             ));
 
             parent.spawn((
-                TextBundle::from_sections([
-                ])
-                .with_text_alignment(TextAlignment::Center),
+                TextBundle::from_sections([]).with_text_alignment(TextAlignment::Center),
                 GameOverText,
             ));
 
@@ -101,7 +95,6 @@ fn update_stats(
     set.p1().single_mut().sections[1].value = format!("{}", game.earth_health);
     set.p2().single_mut().sections[1].value = format!("{}", game.score);
 }
-
 
 fn gameover_screen(
     mut query: Query<&mut Text, With<GameOverText>>,

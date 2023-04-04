@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 
-use crate::{MyAssets, AppState, Enemy, ORIGINAL_TARGET_FPS, ACTOR_LAYER};
+use crate::{AppState, Enemy, MyAssets, ACTOR_LAYER, ORIGINAL_TARGET_FPS};
 
 const MIN_SPAWN_SECONDS: f32 = 1.0;
 const MAX_SPAWN_SECONDS: f32 = 5.5;
@@ -12,12 +12,8 @@ pub struct EnemySpawningPlugin;
 
 impl Plugin for EnemySpawningPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_system(setup_enemy_spawning.in_schedule(OnEnter(AppState::InGame)))
-        .add_systems((
-            spawn_enemy,
-            enemy_movement,
-        ).in_set(OnUpdate(AppState::InGame)));
+        app.add_system(setup_enemy_spawning.in_schedule(OnEnter(AppState::InGame)))
+            .add_systems((spawn_enemy, enemy_movement).in_set(OnUpdate(AppState::InGame)));
     }
 }
 
@@ -28,7 +24,10 @@ struct EnemySpawnConfig {
 
 fn setup_enemy_spawning(mut commands: Commands) {
     commands.insert_resource(EnemySpawnConfig {
-        timer: Timer::new(Duration::from_secs_f32(random_spawn_time()), TimerMode::Once),
+        timer: Timer::new(
+            Duration::from_secs_f32(random_spawn_time()),
+            TimerMode::Once,
+        ),
     })
 }
 
@@ -45,7 +44,10 @@ fn spawn_enemy(
     config.timer.tick(time.delta());
 
     if config.timer.finished() {
-        config.timer =  Timer::new(Duration::from_secs_f32(random_spawn_time()), TimerMode::Once);
+        config.timer = Timer::new(
+            Duration::from_secs_f32(random_spawn_time()),
+            TimerMode::Once,
+        );
 
         let enemy = Enemy::random();
         let img_handle = enemy.clone().image(my_assets);

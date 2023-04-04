@@ -7,10 +7,10 @@ use bevy::{
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 use rand::Rng;
 
-pub mod ui;
-pub mod player_control;
-pub mod enemy_spawning;
 pub mod backdrop;
+pub mod enemy_spawning;
+pub mod player_control;
+pub mod ui;
 
 const EARTH_HEALTH: u32 = 5000;
 const PLAYER_HEALTH: u32 = 100;
@@ -89,6 +89,14 @@ struct MyAssets {
     trespasser: Handle<Image>,
     #[asset(path = "backdrop/star.png")]
     star: Handle<Image>,
+    #[asset(path = "backdrop/planet01.png")]
+    planet01: Handle<Image>,
+    #[asset(path = "backdrop/planet02.png")]
+    planet02: Handle<Image>,
+    #[asset(path = "backdrop/planet03.png")]
+    planet03: Handle<Image>,
+    #[asset(path = "backdrop/planet04.png")]
+    planet04: Handle<Image>,
 }
 
 #[derive(Component)]
