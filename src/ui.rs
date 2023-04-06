@@ -22,7 +22,7 @@ struct EarthHealthText;
 struct ScoreText;
 
 #[derive(Component)]
-struct GameOverText;
+struct MessageText;
 
 fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let text_style = TextStyle {
@@ -69,7 +69,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
 
             parent.spawn((
                 TextBundle::from_sections([]).with_text_alignment(TextAlignment::Center),
-                GameOverText,
+                MessageText,
             ));
 
             parent.spawn((
@@ -97,7 +97,7 @@ fn update_stats(
 }
 
 fn gameover_screen(
-    mut query: Query<&mut Text, With<GameOverText>>,
+    mut query: Query<&mut Text, With<MessageText>>,
     asset_server: Res<AssetServer>,
     game: Res<Game>,
 ) {

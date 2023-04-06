@@ -2,7 +2,7 @@
 
 use bevy::{
     prelude::*,
-    window::{PresentMode, PrimaryWindow},
+    window::{PresentMode, PrimaryWindow}, transform::commands,
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 use rand::Rng;
@@ -53,6 +53,7 @@ fn main() {
             (
                 despawn_enemies,
                 enemy_collision,
+                animate_sprite,
                 check_game_over,
                 check_game_won.after(check_game_over),
             )
@@ -97,6 +98,9 @@ struct MyAssets {
     planet03: Handle<Image>,
     #[asset(path = "backdrop/planet04.png")]
     planet04: Handle<Image>,
+    #[asset(texture_atlas(tile_size_x = 134., tile_size_y = 134., columns = 12, rows = 1, padding_x = 0., padding_y = 0., offset_x = 0., offset_y = 0.))]
+    #[asset(path = "explosion.png")]
+    explosion: Handle<TextureAtlas>,
 }
 
 #[derive(Component)]
@@ -249,6 +253,37 @@ fn enemy_past_bottom(y: f32, window: &Window, enemy_size: Vec2) -> bool {
     y < min_y
 }
 
+#[derive(Component)]
+struct AnimationIndices {
+    first: usize,
+    last: usize,
+}
+
+#[derive(Component, Deref, DerefMut)]
+struct AnimationTimer(Timer);
+
+fn animate_sprite(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut query: Query<(
+        Entity,
+        &AnimationIndices,
+        &mut AnimationTimer,
+        &mut TextureAtlasSprite,
+    )>,
+) {
+    for (entity, indices, mut timer, mut sprite) in &mut query {
+        timer.tick(time.delta());
+        if timer.just_finished() {
+            if sprite.index == indices.last {
+                commands.entity(entity).despawn();
+            } else {
+                sprite.index = sprite.index + 1;
+            };
+        }
+    }
+}
+
 use bevy::sprite::collide_aabb::collide;
 fn enemy_collision(
     mut commands: Commands,
@@ -256,6 +291,7 @@ fn enemy_collision(
     assets: Res<Assets<Image>>,
     player_query: Query<(&mut Player, &mut Transform, &mut Handle<Image>), Without<Enemy>>,
     enemies_query: Query<(Entity, &mut Enemy, &mut Transform, &mut Handle<Image>), Without<Player>>,
+    my_assets: Res<MyAssets>
 ) {
     let player = player_query.single();
     let player_size = assets.get(player.2).unwrap().size();
@@ -279,6 +315,18 @@ fn enemy_collision(
 
             game.score += enemy.bounty;
             commands.entity(enemy_entity).despawn();
+
+            let animation_indices = AnimationIndices { first: 0, last: 11 };
+            commands.spawn((
+                SpriteSheetBundle {
+                    texture_atlas: my_assets.explosion.clone(),
+                    sprite: TextureAtlasSprite::new(animation_indices.first),
+                    transform: Transform::from_xyz(pos.translation.x, pos.translation.y, 0.),
+                    ..default()
+                },
+                animation_indices,
+                AnimationTimer(Timer::from_seconds(0.019, TimerMode::Repeating)),
+            ));
         }
     }
 }

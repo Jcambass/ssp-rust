@@ -1,8 +1,6 @@
 use std::time::Duration;
 
-use bevy::{
-    prelude::*, window::PrimaryWindow,
-};
+use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 
 use crate::{AppState, MyAssets, BACKGROUND_LAYER, ORIGINAL_TARGET_FPS};
@@ -23,7 +21,13 @@ impl Plugin for BackdropPlugin {
                     .in_schedule(OnEnter(AppState::InGame)),
             )
             .add_systems(
-                (spawn_stars, spawn_planets, obstacle_movement, despawn_obstacle).in_set(OnUpdate(AppState::InGame)),
+                (
+                    spawn_stars,
+                    spawn_planets,
+                    obstacle_movement,
+                    despawn_obstacle,
+                )
+                    .in_set(OnUpdate(AppState::InGame)),
             );
     }
 }

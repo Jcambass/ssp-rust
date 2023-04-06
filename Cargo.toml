@@ -9,7 +9,7 @@ edition = "2021"
 # bevy = { version = "0.10.0", features = ["dynamic_linking"] }
 bevy = { version = "0.10.0" }
 
-bevy_asset_loader = "0.16.0"
+bevy_asset_loader = { version = "0.16.0", features = ["2d"]}
 rand = "0.8.5"
 
 [workspace]
