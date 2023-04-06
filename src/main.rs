@@ -2,7 +2,8 @@
 
 use bevy::{
     prelude::*,
-    window::{PresentMode, PrimaryWindow}, transform::commands,
+    transform::commands,
+    window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
 use rand::Rng;
@@ -48,7 +49,8 @@ fn main() {
             earth_health: EARTH_HEALTH,
             score: 0,
         })
-        .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+        // TODO: Find a way so that it doesn't run when unpausing the game
+        .add_system(setup.in_schedule(OnExit(AppState::Loading)))
         .add_systems(
             (
                 despawn_enemies,
@@ -56,9 +58,11 @@ fn main() {
                 animate_sprite,
                 check_game_over,
                 check_game_won.after(check_game_over),
+                check_game_paused,
             )
                 .in_set(OnUpdate(AppState::InGame)),
         )
+        .add_system(check_game_unpaused.in_set(OnUpdate(AppState::Paused)))
         .add_plugin(backdrop::BackdropPlugin)
         .add_plugin(enemy_spawning::EnemySpawningPlugin)
         .add_plugin(player_control::PlayerControlPlugin)
@@ -98,7 +102,16 @@ struct MyAssets {
     planet03: Handle<Image>,
     #[asset(path = "backdrop/planet04.png")]
     planet04: Handle<Image>,
-    #[asset(texture_atlas(tile_size_x = 134., tile_size_y = 134., columns = 12, rows = 1, padding_x = 0., padding_y = 0., offset_x = 0., offset_y = 0.))]
+    #[asset(texture_atlas(
+        tile_size_x = 134.,
+        tile_size_y = 134.,
+        columns = 12,
+        rows = 1,
+        padding_x = 0.,
+        padding_y = 0.,
+        offset_x = 0.,
+        offset_y = 0.
+    ))]
     #[asset(path = "explosion.png")]
     explosion: Handle<TextureAtlas>,
 }
@@ -285,13 +298,14 @@ fn animate_sprite(
 }
 
 use bevy::sprite::collide_aabb::collide;
+use ui::MessageText;
 fn enemy_collision(
     mut commands: Commands,
     mut game: ResMut<Game>,
     assets: Res<Assets<Image>>,
     player_query: Query<(&mut Player, &mut Transform, &mut Handle<Image>), Without<Enemy>>,
     enemies_query: Query<(Entity, &mut Enemy, &mut Transform, &mut Handle<Image>), Without<Player>>,
-    my_assets: Res<MyAssets>
+    my_assets: Res<MyAssets>,
 ) {
     let player = player_query.single();
     let player_size = assets.get(player.2).unwrap().size();
@@ -328,6 +342,38 @@ fn enemy_collision(
                 AnimationTimer(Timer::from_seconds(0.019, TimerMode::Repeating)),
             ));
         }
+    }
+}
+
+fn check_game_paused(
+    mut next_state: ResMut<NextState<AppState>>,
+    keyboard_input: Res<Input<KeyCode>>,
+    asset_server: Res<AssetServer>,
+    mut query: Query<&mut Text, With<MessageText>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        next_state.set(AppState::Paused);
+        // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
+        let text_style = TextStyle {
+            font: asset_server.load("fonts/impact.ttf"),
+            font_size: 42.0,
+            color: Color::WHITE,
+        };
+
+        let mut text = query.single_mut();
+        text.sections = vec![TextSection::new("GAME PAUSED\n", text_style.clone())];
+    }
+}
+
+fn check_game_unpaused(
+    mut next_state: ResMut<NextState<AppState>>,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut query: Query<&mut Text, With<MessageText>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::Escape) {
+        next_state.set(AppState::InGame);
+        let mut text = query.single_mut();
+        text.sections = vec![];
     }
 }
 

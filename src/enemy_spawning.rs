@@ -12,7 +12,7 @@ pub struct EnemySpawningPlugin;
 
 impl Plugin for EnemySpawningPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_enemy_spawning.in_schedule(OnEnter(AppState::InGame)))
+        app.add_system(setup_enemy_spawning.in_schedule(OnExit(AppState::Loading)))
             .add_systems((spawn_enemy, enemy_movement).in_set(OnUpdate(AppState::InGame)));
     }
 }

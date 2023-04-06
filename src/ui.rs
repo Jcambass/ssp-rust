@@ -6,7 +6,7 @@ pub struct UiOverlayPlugin;
 
 impl Plugin for UiOverlayPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup_ui.in_schedule(OnEnter(AppState::InGame)))
+        app.add_system(setup_ui.in_schedule(OnExit(AppState::Loading)))
             .add_system(update_stats.in_set(OnUpdate(AppState::InGame)))
             .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)));
     }
@@ -22,7 +22,7 @@ struct EarthHealthText;
 struct ScoreText;
 
 #[derive(Component)]
-struct MessageText;
+pub struct MessageText;
 
 fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let text_style = TextStyle {

@@ -18,7 +18,7 @@ impl Plugin for BackdropPlugin {
         app.insert_resource(ClearColor(Color::BLACK))
             .add_systems(
                 (setup_initial_backdrop, setup_backdrop_spawning)
-                    .in_schedule(OnEnter(AppState::InGame)),
+                    .in_schedule(OnExit(AppState::Loading)),
             )
             .add_systems(
                 (
