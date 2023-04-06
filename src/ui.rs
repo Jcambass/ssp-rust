@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 
 use crate::{AppState, Game, EARTH_HEALTH, PLAYER_HEALTH};
@@ -7,6 +9,7 @@ pub struct UiOverlayPlugin;
 impl Plugin for UiOverlayPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(setup_ui.in_schedule(OnExit(AppState::Loading)))
+            .add_system(clear_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(update_stats.in_set(OnUpdate(AppState::InGame)))
             .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)));
     }
@@ -68,7 +71,9 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
 
             parent.spawn((
-                TextBundle::from_sections([]).with_text_alignment(TextAlignment::Center),
+                TextBundle::from_sections([
+                    TextSection::new("PROTECT EARTH AS LONG AS YOU CAN!!!", text_style.clone()),
+                ]).with_text_alignment(TextAlignment::Center),
                 MessageText,
             ));
 
@@ -81,6 +86,30 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 HealthText,
             ));
         });
+
+        commands.insert_resource(MessageConfig {
+            msg_timer: Timer::new(
+                Duration::from_secs_f32(4.25),
+                TimerMode::Once,
+            ),
+        })
+}
+
+#[derive(Resource)]
+struct MessageConfig {
+    msg_timer: Timer,
+}
+
+fn clear_msg(
+    mut query: Query<&mut Text, With<MessageText>>,
+    time: Res<Time>,
+    mut config: ResMut<MessageConfig>,
+) {
+    config.msg_timer.tick(time.delta());
+    if config.msg_timer.just_finished() {
+        let mut text = query.single_mut();
+        text.sections = vec![];
+    }
 }
 
 fn update_stats(

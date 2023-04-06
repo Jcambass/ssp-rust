@@ -220,7 +220,6 @@ fn despawn_obstacle(
 
         if obstacle_past_bottom(transform.translation.y, window, obs_size) {
             commands.entity(obs_entity).despawn();
-            println!("Despawned Obstacle!")
         }
     }
 }

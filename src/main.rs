@@ -256,7 +256,6 @@ fn despawn_enemies(
             };
 
             commands.entity(enemy_entity).despawn();
-            println!("Despawned Enemy!")
         }
     }
 }
