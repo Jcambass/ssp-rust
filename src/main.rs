@@ -241,6 +241,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 13,
             bounty: 35,
+            // TODO: Remove Weapon from this enemy.
             weapon: Weapon::hammer(false),
         }
     }

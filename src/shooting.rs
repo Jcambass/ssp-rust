@@ -292,6 +292,10 @@ fn enemy_shoot(
                                 - projectile_size.y / 2.0,
                             ACTOR_LAYER,
                         ),
+                        sprite: Sprite {
+                            flip_y: true,
+                            ..default()
+                        },
                         ..default()
                     },
                     weapon.projectile,
