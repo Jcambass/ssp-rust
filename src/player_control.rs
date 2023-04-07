@@ -30,7 +30,7 @@ fn player_shoot(
 
     if keyboard_input.just_pressed(KeyCode::J) && weapon.cooldown_timer.finished() {
         for pos in &weapon.gun_positions {
-            let texture = weapon.player_projectile.image(&my_assets);
+            let texture = weapon.projectile.image(&my_assets);
             let projectile_size = assets.get(&texture).unwrap().size();
 
             commands.spawn((
@@ -43,7 +43,7 @@ fn player_shoot(
                     ),
                     ..default()
                 },
-                weapon.player_projectile,
+                weapon.projectile,
             ));
         }
         weapon.cooldown_timer.reset()
@@ -70,6 +70,7 @@ fn projectile_move(
     }
 }
 
+// TODO: DRYup helpers like that.
 fn projectile_past_top(y: f32, window: &Window, proj_size: Vec2) -> bool {
     let max_y = (window.height() / 2.) + (proj_size.y / 2.);
     y > max_y
