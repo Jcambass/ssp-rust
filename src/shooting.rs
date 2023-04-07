@@ -1,18 +1,25 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, window::PrimaryWindow, sprite::collide_aabb::collide};
+use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
 
-use crate::{AppState, MyAssets, Player, ACTOR_LAYER, ORIGINAL_TARGET_FPS, Enemy, Game, AnimationIndices, AnimationTimer};
+use crate::{
+    AnimationIndices, AnimationTimer, AppState, Enemy, Game, MyAssets, Player, ACTOR_LAYER,
+    ORIGINAL_TARGET_FPS,
+};
 
 pub struct ShootingPlugin;
 
 impl Plugin for ShootingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems((
-            player_shoot,
-            projectile_move,
-            projectile_collision,
-        ).in_set(OnUpdate(AppState::InGame)));
+        app.add_systems(
+            (
+                player_shoot,
+                enemy_shoot,
+                projectile_move,
+                projectile_collision,
+            )
+                .in_set(OnUpdate(AppState::InGame)),
+        );
     }
 }
 
@@ -35,7 +42,7 @@ pub struct Projectile {
 
 impl Projectile {
     pub fn image(&self, assets: &Res<MyAssets>) -> Handle<Image> {
-        match self.projectile_type{
+        match self.projectile_type {
             ProjectileType::Blaster => assets.blaster.clone(),
             ProjectileType::Grim => assets.grim.clone(),
             ProjectileType::Hammer => assets.hammer.clone(),
@@ -45,7 +52,7 @@ impl Projectile {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Weapon {
     pub name: String,
     pub cooldown_timer: Timer,
@@ -56,7 +63,7 @@ pub struct Weapon {
 
 impl Weapon {
     pub fn stomp(friendly: bool) -> Self {
-        let mut cooldown = 5.0/ORIGINAL_TARGET_FPS;
+        let mut cooldown = 5.0 / ORIGINAL_TARGET_FPS;
         if !friendly {
             cooldown *= 2.0
         }
@@ -80,12 +87,12 @@ impl Weapon {
                     damage: 6,
                     projectile_type: ProjectileType::Stomp,
                 }
-            }
+            },
         }
     }
 
     pub fn blaster(friendly: bool) -> Self {
-        let mut cooldown = 2300.0 / 40.0/ORIGINAL_TARGET_FPS;
+        let mut cooldown = 2300.0 / 40.0 / ORIGINAL_TARGET_FPS;
         if !friendly {
             cooldown *= 2.0
         }
@@ -109,12 +116,12 @@ impl Weapon {
                     damage: 50,
                     projectile_type: ProjectileType::Blaster,
                 }
-            }
+            },
         }
     }
 
     pub fn grim(friendly: bool) -> Self {
-        let mut cooldown = 2500.0 / 40.0/ORIGINAL_TARGET_FPS;
+        let mut cooldown = 2500.0 / 40.0 / ORIGINAL_TARGET_FPS;
         if !friendly {
             cooldown *= 2.0
         }
@@ -138,12 +145,12 @@ impl Weapon {
                     damage: 40,
                     projectile_type: ProjectileType::Grim,
                 }
-            }
+            },
         }
     }
 
     pub fn hammer(friendly: bool) -> Self {
-        let mut cooldown = 2000.0 / 40.0/ORIGINAL_TARGET_FPS;
+        let mut cooldown = 2000.0 / 40.0 / ORIGINAL_TARGET_FPS;
         if !friendly {
             cooldown *= 2.0
         }
@@ -171,12 +178,12 @@ impl Weapon {
                     damage: 4,
                     projectile_type: ProjectileType::Hammer,
                 }
-            }
+            },
         }
     }
 
     pub fn ratata(friendly: bool) -> Self {
-        let mut cooldown = 4.0/ORIGINAL_TARGET_FPS;
+        let mut cooldown = 4.0 / ORIGINAL_TARGET_FPS;
         if !friendly {
             cooldown *= 2.0
         }
@@ -203,11 +210,10 @@ impl Weapon {
                     damage: 3,
                     projectile_type: ProjectileType::Ratata,
                 }
-            }
+            },
         }
     }
 }
-
 
 fn player_shoot(
     time: Res<Time>,
@@ -232,8 +238,14 @@ fn player_shoot(
                 SpriteBundle {
                     texture: texture,
                     transform: Transform::from_xyz(
-                        transform.translation.x + weapon.mounting_point.translation.x + pos.translation.x,
-                        transform.translation.y + weapon.mounting_point.translation.y + pos.translation.y + player_size.y/2.0 + projectile_size.y/2.0,
+                        transform.translation.x
+                            + weapon.mounting_point.translation.x
+                            + pos.translation.x,
+                        transform.translation.y
+                            + weapon.mounting_point.translation.y
+                            + pos.translation.y
+                            + player_size.y / 2.0
+                            + projectile_size.y / 2.0,
                         ACTOR_LAYER,
                     ),
                     ..default()
@@ -242,6 +254,51 @@ fn player_shoot(
             ));
         }
         weapon.cooldown_timer.reset()
+    }
+}
+
+fn enemy_shoot(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut enemies_query: Query<
+        (Entity, &mut Enemy, &mut Transform, &mut Handle<Image>),
+        (Without<Player>, Without<Projectile>),
+    >,
+    assets: Res<Assets<Image>>,
+    my_assets: Res<MyAssets>,
+) {
+    for (_enemy_entity, mut enemy, transform, img) in &mut enemies_query {
+        let enemy_size = assets.get(&img).unwrap().size();
+
+        let weapon = &mut enemy.weapon;
+
+        weapon.cooldown_timer.tick(time.delta());
+        if weapon.cooldown_timer.finished() {
+            for pos in &weapon.gun_positions {
+                let texture = weapon.projectile.image(&my_assets);
+                let projectile_size = assets.get(&texture).unwrap().size();
+
+                commands.spawn((
+                    SpriteBundle {
+                        texture: texture,
+                        transform: Transform::from_xyz(
+                            transform.translation.x
+                                + weapon.mounting_point.translation.x
+                                + pos.translation.x,
+                                transform.translation.y
+                                + weapon.mounting_point.translation.y
+                                + pos.translation.y
+                                - enemy_size.y / 2.0
+                                - projectile_size.y / 2.0,
+                            ACTOR_LAYER,
+                        ),
+                        ..default()
+                    },
+                    weapon.projectile,
+                ));
+            }
+            weapon.cooldown_timer.reset()
+        }
     }
 }
 
@@ -255,11 +312,21 @@ fn projectile_move(
     let window = window_query.single();
 
     for (proj_entity, projectile, mut transform, img_handle) in &mut projectiles {
-        transform.translation.y = transform.translation.y + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+        if projectile.friendly {
+            transform.translation.y =
+                transform.translation.y + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+        } else {
+            transform.translation.y =
+                transform.translation.y - projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+        }
+
+
 
         let proj_size = assets.get(img_handle).unwrap().size();
 
-        if projectile_past_top(transform.translation.y, window, proj_size) || projectile_past_bottom(transform.translation.y, window, proj_size) {
+        if projectile_past_top(transform.translation.y, window, proj_size)
+            || projectile_past_bottom(transform.translation.y, window, proj_size)
+        {
             commands.entity(proj_entity).despawn();
         }
     }
@@ -280,9 +347,18 @@ fn projectile_collision(
     mut commands: Commands,
     mut game: ResMut<Game>,
     assets: Res<Assets<Image>>,
-    player_query: Query<(Entity, &mut Player, &mut Transform, &mut Handle<Image>), (Without<Enemy>, Without<Projectile>)>,
-    mut enemies_query: Query<(Entity, &mut Enemy, &mut Transform, &mut Handle<Image>), (Without<Player>, Without<Projectile>)>,
-    mut projectiles: Query<(Entity, &mut Projectile, &mut Transform, &Handle<Image>), (Without<Enemy>, Without<Player>)>,
+    player_query: Query<
+        (Entity, &mut Player, &mut Transform, &mut Handle<Image>),
+        (Without<Enemy>, Without<Projectile>),
+    >,
+    mut enemies_query: Query<
+        (Entity, &mut Enemy, &mut Transform, &mut Handle<Image>),
+        (Without<Player>, Without<Projectile>),
+    >,
+    mut projectiles: Query<
+        (Entity, &mut Projectile, &mut Transform, &Handle<Image>),
+        (Without<Enemy>, Without<Player>),
+    >,
     my_assets: Res<MyAssets>,
 ) {
     for (proj_entity, projectile, transform, img_handle) in &mut projectiles {
@@ -317,7 +393,11 @@ fn projectile_collision(
                             SpriteSheetBundle {
                                 texture_atlas: my_assets.explosion.clone(),
                                 sprite: TextureAtlasSprite::new(animation_indices.first),
-                                transform: Transform::from_xyz(pos.translation.x, pos.translation.y, 0.),
+                                transform: Transform::from_xyz(
+                                    pos.translation.x,
+                                    pos.translation.y,
+                                    0.,
+                                ),
                                 ..default()
                             },
                             animation_indices,

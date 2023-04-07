@@ -145,7 +145,7 @@ impl Player {
             Weapon::blaster(true),
             Weapon::grim(true),
             Weapon::hammer(true),
-            Weapon::ratata(true)
+            Weapon::ratata(true),
         ];
 
         Self {
@@ -175,6 +175,7 @@ struct Enemy {
     pub collision_damage: u32,
     pub bounty: u32,
     pub speed: f32,
+    pub weapon: Weapon,
 }
 
 impl Enemy {
@@ -201,6 +202,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 35,
             bounty: 120,
+            weapon: Weapon::stomp(false),
         }
     }
 
@@ -213,6 +215,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 75,
             bounty: 250,
+            weapon: Weapon::grim(false),
         }
     }
 
@@ -225,6 +228,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 55,
             bounty: 180,
+            weapon: Weapon::hammer(false),
         }
     }
 
@@ -237,6 +241,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 13,
             bounty: 35,
+            weapon: Weapon::hammer(false),
         }
     }
 
