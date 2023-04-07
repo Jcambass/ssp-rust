@@ -7,6 +7,7 @@ use bevy::{
     window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::Rng;
 
 pub mod backdrop;
@@ -68,6 +69,7 @@ fn main() {
         .add_plugin(enemy_spawning::EnemySpawningPlugin)
         .add_plugin(player_control::PlayerControlPlugin)
         .add_plugin(ui::UiOverlayPlugin)
+        .add_plugin(WorldInspectorPlugin::new())
         .run();
 }
 

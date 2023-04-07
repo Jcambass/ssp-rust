@@ -51,13 +51,35 @@ fn player_shoot(
 }
 
 fn projectile_move(
+    mut commands: Commands,
     time: Res<Time>,
-    mut projectiles: Query<(&mut Projectile, &mut Transform, &Handle<Image>)>,
+    mut projectiles: Query<(Entity, &mut Projectile, &mut Transform, &Handle<Image>)>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    assets: Res<Assets<Image>>,
 ) {
-    for (projectile, mut transform, _img_handle) in &mut projectiles {
+    let window = window_query.single();
+
+    for (proj_entity, projectile, mut transform, img_handle) in &mut projectiles {
         transform.translation.y = transform.translation.y + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+
+        let proj_size = assets.get(img_handle).unwrap().size();
+
+        if projectile_past_top(transform.translation.y, window, proj_size) || projectile_past_bottom(transform.translation.y, window, proj_size) {
+            commands.entity(proj_entity).despawn();
+        }
     }
 }
+
+fn projectile_past_top(y: f32, window: &Window, proj_size: Vec2) -> bool {
+    let max_y = (window.height() / 2.) + (proj_size.y / 2.);
+    y > max_y
+}
+
+fn projectile_past_bottom(y: f32, window: &Window, proj_size: Vec2) -> bool {
+    let min_y = -(window.height() / 2.) - (proj_size.y / 2.);
+    y < min_y
+}
+
 
 fn player_movement(
     time: Res<Time>,
