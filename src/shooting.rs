@@ -262,18 +262,38 @@ fn enemy_shoot(
     mut commands: Commands,
     mut enemies_query: Query<
         (Entity, &mut Enemy, &mut Transform, &mut Handle<Image>),
-        (Without<Player>, Without<Projectile>),
+        Without<Player>,
     >,
+    player_query: Query<(&mut Player, &mut Transform, &Handle<Image>), Without<Enemy>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
     assets: Res<Assets<Image>>,
     my_assets: Res<MyAssets>,
 ) {
+    let window = window_query.single();
+
     for (_enemy_entity, mut enemy, transform, img) in &mut enemies_query {
         let enemy_size = assets.get(&img).unwrap().size();
 
         let weapon = &mut enemy.weapon;
 
         weapon.cooldown_timer.tick(time.delta());
-        if weapon.cooldown_timer.finished() {
+
+        let (_player, player_pos, player_img) = player_query.single();
+        let player_size = assets.get(&player_img).unwrap().size();
+
+        let aim_pos = transform.translation;
+        let aim_size = Vec2 { x: player_size.x, y: window.height() };
+
+        // Includes some buffer to give the player a slight advantage.
+        let fully_visible = transform.translation.y + enemy_size.y/2.0 <= window.height()/2.0 - 12.0;
+
+        if weapon.cooldown_timer.finished() && fully_visible && collide(
+            player_pos.translation,
+            player_size,
+            aim_pos,
+            aim_size,
+        )
+        .is_some() {
             for pos in &weapon.gun_positions {
                 let texture = weapon.projectile.image(&my_assets);
                 let projectile_size = assets.get(&texture).unwrap().size();
