@@ -67,10 +67,12 @@ impl Weapon {
         if !friendly {
             cooldown *= 2.0
         }
+        let mut timer = Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once);
+        timer.pause();
 
         Weapon {
             name: String::from("Stomp O´ Matic"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
+            cooldown_timer: timer,
             mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
             gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
@@ -97,9 +99,12 @@ impl Weapon {
             cooldown *= 2.0
         }
 
+        let mut timer = Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once);
+        timer.pause();
+
         Weapon {
             name: String::from("Space Blaster"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
+            cooldown_timer: timer,
             mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
             gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
@@ -126,9 +131,12 @@ impl Weapon {
             cooldown *= 2.0
         }
 
+        let mut timer = Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once);
+        timer.pause();
+
         Weapon {
             name: String::from("Grim Reaper"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
+            cooldown_timer: timer,
             mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
             gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
@@ -155,9 +163,12 @@ impl Weapon {
             cooldown *= 2.0
         }
 
+        let mut timer = Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once);
+        timer.pause();
+
         Weapon {
             name: String::from("Space Hammer"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
+            cooldown_timer: timer,
             mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
             gun_positions: vec![
                 Transform::from_xyz(-24.0, 0.0, 0.0),
@@ -188,9 +199,12 @@ impl Weapon {
             cooldown *= 2.0
         }
 
+        let mut timer = Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once);
+        timer.pause();
+
         Weapon {
             name: String::from("Ratata 9000"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
+            cooldown_timer: timer,
             mounting_point: Transform::from_xyz(10.0, 6.5, 0.0),
             gun_positions: vec![
                 Transform::from_xyz(-6.0, 0.0, 0.0),
@@ -229,7 +243,11 @@ fn player_shoot(
     let weapon = player.current_weapon();
     weapon.cooldown_timer.tick(time.delta());
 
-    if keyboard_input.just_pressed(KeyCode::J) && weapon.cooldown_timer.finished() {
+    if keyboard_input.just_pressed(KeyCode::J) && (weapon.cooldown_timer.finished() || weapon.cooldown_timer.paused()) {
+        if weapon.cooldown_timer.paused() {
+            weapon.cooldown_timer.unpause();
+        }
+
         for pos in &weapon.gun_positions {
             let texture = weapon.projectile.image(&my_assets);
             let projectile_size = assets.get(&texture).unwrap().size();
@@ -290,10 +308,14 @@ fn enemy_shoot(
             let fully_visible =
                 transform.translation.y + enemy_size.y / 2.0 <= window.height() / 2.0 - 12.0;
 
-            if weapon.cooldown_timer.finished()
+            if (weapon.cooldown_timer.finished() || weapon.cooldown_timer.paused())
                 && fully_visible
                 && collide(player_pos.translation, player_size, aim_pos, aim_size).is_some()
             {
+                if weapon.cooldown_timer.paused() {
+                    weapon.cooldown_timer.unpause();
+                }
+
                 for pos in &weapon.gun_positions {
                     let texture = weapon.projectile.image(&my_assets);
                     let projectile_size = assets.get(&texture).unwrap().size();
