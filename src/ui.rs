@@ -11,7 +11,9 @@ impl Plugin for UiOverlayPlugin {
         app.add_system(setup_ui.in_schedule(OnExit(AppState::Loading)))
             .add_system(clear_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(update_stats.in_set(OnUpdate(AppState::InGame)))
-            .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)));
+            .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)))
+            .add_system(pause_screen.in_schedule(OnEnter(AppState::Paused)))
+            .add_system(clear_msg_now.in_schedule(OnExit(AppState::Paused)));
     }
 }
 
@@ -71,9 +73,11 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
 
             parent.spawn((
-                TextBundle::from_sections([
-                    TextSection::new("PROTECT EARTH AS LONG AS YOU CAN!!!", text_style.clone()),
-                ]).with_text_alignment(TextAlignment::Center),
+                TextBundle::from_sections([TextSection::new(
+                    "PROTECT EARTH AS LONG AS YOU CAN!!!",
+                    text_style.clone(),
+                )])
+                .with_text_alignment(TextAlignment::Center),
                 MessageText,
             ));
 
@@ -87,12 +91,9 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
             ));
         });
 
-        commands.insert_resource(MessageConfig {
-            msg_timer: Timer::new(
-                Duration::from_secs_f32(4.25),
-                TimerMode::Once,
-            ),
-        })
+    commands.insert_resource(MessageConfig {
+        msg_timer: Timer::new(Duration::from_secs_f32(4.25), TimerMode::Once),
+    })
 }
 
 #[derive(Resource)]
@@ -143,4 +144,21 @@ fn gameover_screen(
         TextSection::new("YOUR SCORE: ", text_style.clone()),
         TextSection::new(game.score.to_string(), text_style.clone()),
     ];
+}
+
+fn pause_screen(mut query: Query<&mut Text, With<MessageText>>, asset_server: Res<AssetServer>) {
+    // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
+    let text_style = TextStyle {
+        font: asset_server.load("fonts/impact.ttf"),
+        font_size: 42.0,
+        color: Color::WHITE,
+    };
+
+    let mut text = query.single_mut();
+    text.sections = vec![TextSection::new("GAME PAUSED\n", text_style.clone())];
+}
+
+fn clear_msg_now(mut query: Query<&mut Text, With<MessageText>>) {
+    let mut text = query.single_mut();
+    text.sections = vec![];
 }

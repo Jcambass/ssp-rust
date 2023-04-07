@@ -1,8 +1,9 @@
 //! Renders a 2D scene containing a single, moving sprite.
 
+use std::time::Duration;
+
 use bevy::{
     prelude::*,
-    transform::commands,
     window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
@@ -114,17 +115,216 @@ struct MyAssets {
     ))]
     #[asset(path = "explosion.png")]
     explosion: Handle<TextureAtlas>,
+    #[asset(path = "projectiles/blaster.png")]
+    blaster: Handle<Image>,
+    #[asset(path = "projectiles/grim.png")]
+    grim: Handle<Image>,
+    #[asset(path = "projectiles/hammer.png")]
+    hammer: Handle<Image>,
+    #[asset(path = "projectiles/ratata.png")]
+    ratata: Handle<Image>,
+    #[asset(path = "projectiles/stomp.png")]
+    stomp: Handle<Image>,
 }
 
 #[derive(Component)]
 struct Player {
     pub speed: f32,
+    pub current_weapon_index: usize,
+    pub weapons: Vec<Weapon>,
 }
 
 impl Player {
     pub fn new() -> Self {
-        Self { speed: 5.618 }
+        let weapons = vec![
+            Weapon {
+                name: String::from("Stomp O´ Matic"),
+                cooldown_timer: Timer::new(Duration::from_secs_f32(5.0/ORIGINAL_TARGET_FPS), TimerMode::Once),
+                mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
+                gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+                player_projectile: Projectile::stomp(true),
+                enemy_projectile: Projectile::stomp(false),
+            },
+            Weapon {
+                name: String::from("Space Blaster"),
+                cooldown_timer: Timer::new(Duration::from_secs_f32(2300.0 / 40.0/ORIGINAL_TARGET_FPS), TimerMode::Once),
+                mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
+                gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+                player_projectile: Projectile::blaster(true),
+                enemy_projectile: Projectile::blaster(false),
+            },
+            Weapon {
+                name: String::from("Grim Reaper"),
+                cooldown_timer: Timer::new(Duration::from_secs_f32(2500.0 / 40.0/ORIGINAL_TARGET_FPS), TimerMode::Once),
+                mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
+                gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+                player_projectile: Projectile::grim(true),
+                enemy_projectile: Projectile::grim(false),
+            },
+            Weapon {
+                name: String::from("Space Hammer"),
+                cooldown_timer: Timer::new(Duration::from_secs_f32(2000.0 / 40.0/ORIGINAL_TARGET_FPS), TimerMode::Once),
+                mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
+                gun_positions: vec![
+                    Transform::from_xyz(-24.0, 0.0, 0.0),
+                    Transform::from_xyz(0.0, 0.0, 0.0),
+                    Transform::from_xyz(24.0, 0.0, 0.0),
+                ],
+                player_projectile: Projectile::hammer(true),
+                enemy_projectile: Projectile::hammer(false),
+            },
+            Weapon {
+                name: String::from("Ratata 9000"),
+                cooldown_timer: Timer::new(Duration::from_secs_f32(4.0/ORIGINAL_TARGET_FPS), TimerMode::Once),
+                mounting_point: Transform::from_xyz(10.0, 6.5, 0.0),
+                gun_positions: vec![
+                    Transform::from_xyz(-6.0, 0.0, 0.0),
+                    Transform::from_xyz(6.0, 0.0, 0.0),
+                ],
+                player_projectile: Projectile::ratata(true),
+                enemy_projectile: Projectile::ratata(false),
+            },
+        ];
+
+        Self {
+            speed: 5.618,
+            weapons: weapons,
+            current_weapon_index: 0,
+        }
     }
+
+    pub fn current_weapon(&mut self) -> &mut Weapon {
+        &mut self.weapons[self.current_weapon_index]
+    }
+}
+
+#[derive(Clone, Copy)]
+enum ProjectileType {
+    Blaster,
+    Grim,
+    Hammer,
+    Ratata,
+    Stomp,
+}
+
+#[derive(Component, Clone, Copy)]
+struct Projectile {
+    pub speed: f32,
+    pub damage: f32,
+    pub friendly: bool,
+    pub projectile_type: ProjectileType,
+}
+
+impl Projectile {
+    pub fn stomp(friendly: bool) -> Self {
+        if friendly {
+            Self {
+                friendly: true,
+                speed: 13.0,
+                damage: 6.0,
+                projectile_type: ProjectileType::Stomp,
+            }
+        } else {
+            Self {
+                friendly: false,
+                speed: 10.0,
+                damage: 6.0,
+                projectile_type: ProjectileType::Stomp,
+            }
+        }
+    }
+
+    pub fn blaster(friendly: bool) -> Self {
+        if friendly {
+            Self {
+                friendly: true,
+                speed: 15.0,
+                damage: 12.0,
+                projectile_type: ProjectileType::Blaster,
+            }
+        } else {
+            Self {
+                friendly: false,
+                speed: 5.0,
+                damage: 50.0,
+                projectile_type: ProjectileType::Blaster,
+            }
+        }
+    }
+
+    pub fn grim(friendly: bool) -> Self {
+        if friendly {
+            Self {
+                friendly: true,
+                speed: 5.0,
+                damage: 50.0,
+                projectile_type: ProjectileType::Grim,
+            }
+        } else {
+            Self {
+                friendly: false,
+                speed: 4.0,
+                damage: 40.0,
+                projectile_type: ProjectileType::Grim,
+            }
+        }
+    }
+
+    pub fn hammer(friendly: bool) -> Self {
+        if friendly {
+            Self {
+                friendly: true,
+                speed: 10.0,
+                damage: 4.0,
+                projectile_type: ProjectileType::Hammer,
+            }
+        } else {
+            Self {
+                friendly: false,
+                speed: 7.0,
+                damage: 4.0,
+                projectile_type: ProjectileType::Hammer,
+            }
+        }
+    }
+
+    pub fn ratata(friendly: bool) -> Self {
+        if friendly {
+            Self {
+                friendly: true,
+                speed: 15.0,
+                damage: 3.0,
+                projectile_type: ProjectileType::Ratata,
+            }
+        } else {
+            Self {
+                friendly: false,
+                speed: 12.0,
+                damage: 3.0,
+                projectile_type: ProjectileType::Ratata,
+            }
+        }
+    }
+
+    pub fn image(&self, assets: &Res<MyAssets>) -> Handle<Image> {
+        match self.projectile_type{
+            ProjectileType::Blaster => assets.blaster.clone(),
+            ProjectileType::Grim => assets.grim.clone(),
+            ProjectileType::Hammer => assets.hammer.clone(),
+            ProjectileType::Ratata => assets.ratata.clone(),
+            ProjectileType::Stomp => assets.stomp.clone(),
+        }
+    }
+}
+
+#[derive(Component)]
+struct Weapon {
+    pub name: String,
+    pub cooldown_timer: Timer,
+    pub gun_positions: Vec<Transform>,
+    pub mounting_point: Transform,
+    pub player_projectile: Projectile,
+    pub enemy_projectile: Projectile,
 }
 
 #[derive(Clone)]
@@ -297,7 +497,7 @@ fn animate_sprite(
 }
 
 use bevy::sprite::collide_aabb::collide;
-use ui::MessageText;
+
 fn enemy_collision(
     mut commands: Commands,
     mut game: ResMut<Game>,
@@ -347,32 +547,18 @@ fn enemy_collision(
 fn check_game_paused(
     mut next_state: ResMut<NextState<AppState>>,
     keyboard_input: Res<Input<KeyCode>>,
-    asset_server: Res<AssetServer>,
-    mut query: Query<&mut Text, With<MessageText>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Escape) {
         next_state.set(AppState::Paused);
-        // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
-        let text_style = TextStyle {
-            font: asset_server.load("fonts/impact.ttf"),
-            font_size: 42.0,
-            color: Color::WHITE,
-        };
-
-        let mut text = query.single_mut();
-        text.sections = vec![TextSection::new("GAME PAUSED\n", text_style.clone())];
     }
 }
 
 fn check_game_unpaused(
     mut next_state: ResMut<NextState<AppState>>,
     keyboard_input: Res<Input<KeyCode>>,
-    mut query: Query<&mut Text, With<MessageText>>,
 ) {
     if keyboard_input.just_pressed(KeyCode::Escape) {
         next_state.set(AppState::InGame);
-        let mut text = query.single_mut();
-        text.sections = vec![];
     }
 }
 

@@ -1,12 +1,61 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{AppState, Player, ORIGINAL_TARGET_FPS};
+use crate::{AppState, Player, ORIGINAL_TARGET_FPS, ACTOR_LAYER, MyAssets, Projectile};
 
 pub struct PlayerControlPlugin;
 
 impl Plugin for PlayerControlPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(player_movement.in_set(OnUpdate(AppState::InGame)));
+        app.add_systems((
+            player_movement,
+            player_shoot,
+            projectile_move
+        ).in_set(OnUpdate(AppState::InGame)));
+    }
+}
+
+fn player_shoot(
+    time: Res<Time>,
+    mut commands: Commands,
+    keyboard_input: Res<Input<KeyCode>>,
+    mut player_position: Query<(&mut Player, &mut Transform, &Handle<Image>)>,
+    assets: Res<Assets<Image>>,
+    my_assets: Res<MyAssets>,
+) {
+    let (mut player, transform, player_img_handle) = player_position.single_mut();
+    let player_size = assets.get(player_img_handle).unwrap().size();
+
+    let weapon = player.current_weapon();
+    weapon.cooldown_timer.tick(time.delta());
+
+    if keyboard_input.just_pressed(KeyCode::J) && weapon.cooldown_timer.finished() {
+        for pos in &weapon.gun_positions {
+            let texture = weapon.player_projectile.image(&my_assets);
+            let projectile_size = assets.get(&texture).unwrap().size();
+
+            commands.spawn((
+                SpriteBundle {
+                    texture: texture,
+                    transform: Transform::from_xyz(
+                        transform.translation.x + weapon.mounting_point.translation.x + pos.translation.x,
+                        transform.translation.y + weapon.mounting_point.translation.y + pos.translation.y + player_size.y/2.0 + projectile_size.y/2.0,
+                        ACTOR_LAYER,
+                    ),
+                    ..default()
+                },
+                weapon.player_projectile,
+            ));
+        }
+        weapon.cooldown_timer.reset()
+    }
+}
+
+fn projectile_move(
+    time: Res<Time>,
+    mut projectiles: Query<(&mut Projectile, &mut Transform, &Handle<Image>)>,
+) {
+    for (projectile, mut transform, _img_handle) in &mut projectiles {
+        transform.translation.y = transform.translation.y + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
     }
 }
 
