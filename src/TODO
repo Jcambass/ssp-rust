@@ -4,6 +4,5 @@
 - Player weapon switching.
 - Game Won message.
 - Ensure cooldown doesn't apply from the stat (check SSP behaviour).
-- Remove Weapon from treespaser.
 - Make sure stars are same size as original.
 - Make sure fonts are the same size as original.

@@ -274,54 +274,55 @@ fn enemy_shoot(
     for (_enemy_entity, mut enemy, transform, img) in &mut enemies_query {
         let enemy_size = assets.get(&img).unwrap().size();
 
-        let weapon = &mut enemy.weapon;
+        if let Some(weapon) = &mut enemy.weapon {
+            weapon.cooldown_timer.tick(time.delta());
 
-        weapon.cooldown_timer.tick(time.delta());
+            let (_player, player_pos, player_img) = player_query.single();
+            let player_size = assets.get(&player_img).unwrap().size();
 
-        let (_player, player_pos, player_img) = player_query.single();
-        let player_size = assets.get(&player_img).unwrap().size();
+            let aim_pos = transform.translation;
+            let aim_size = Vec2 {
+                x: player_size.x,
+                y: window.height(),
+            };
 
-        let aim_pos = transform.translation;
-        let aim_size = Vec2 { x: player_size.x, y: window.height() };
+            // Includes some buffer to give the player a slight advantage.
+            let fully_visible =
+                transform.translation.y + enemy_size.y / 2.0 <= window.height() / 2.0 - 12.0;
 
-        // Includes some buffer to give the player a slight advantage.
-        let fully_visible = transform.translation.y + enemy_size.y/2.0 <= window.height()/2.0 - 12.0;
+            if weapon.cooldown_timer.finished()
+                && fully_visible
+                && collide(player_pos.translation, player_size, aim_pos, aim_size).is_some()
+            {
+                for pos in &weapon.gun_positions {
+                    let texture = weapon.projectile.image(&my_assets);
+                    let projectile_size = assets.get(&texture).unwrap().size();
 
-        if weapon.cooldown_timer.finished() && fully_visible && collide(
-            player_pos.translation,
-            player_size,
-            aim_pos,
-            aim_size,
-        )
-        .is_some() {
-            for pos in &weapon.gun_positions {
-                let texture = weapon.projectile.image(&my_assets);
-                let projectile_size = assets.get(&texture).unwrap().size();
-
-                commands.spawn((
-                    SpriteBundle {
-                        texture: texture,
-                        transform: Transform::from_xyz(
-                            transform.translation.x
-                                + weapon.mounting_point.translation.x
-                                + pos.translation.x,
+                    commands.spawn((
+                        SpriteBundle {
+                            texture: texture,
+                            transform: Transform::from_xyz(
+                                transform.translation.x
+                                    + weapon.mounting_point.translation.x
+                                    + pos.translation.x,
                                 transform.translation.y
-                                + weapon.mounting_point.translation.y
-                                + pos.translation.y
-                                - enemy_size.y / 2.0
-                                - projectile_size.y / 2.0,
-                            ACTOR_LAYER,
-                        ),
-                        sprite: Sprite {
-                            flip_y: true,
+                                    + weapon.mounting_point.translation.y
+                                    + pos.translation.y
+                                    - enemy_size.y / 2.0
+                                    - projectile_size.y / 2.0,
+                                ACTOR_LAYER,
+                            ),
+                            sprite: Sprite {
+                                flip_y: true,
+                                ..default()
+                            },
                             ..default()
                         },
-                        ..default()
-                    },
-                    weapon.projectile,
-                ));
+                        weapon.projectile,
+                    ));
+                }
+                weapon.cooldown_timer.reset()
             }
-            weapon.cooldown_timer.reset()
         }
     }
 }
@@ -337,14 +338,12 @@ fn projectile_move(
 
     for (proj_entity, projectile, mut transform, img_handle) in &mut projectiles {
         if projectile.friendly {
-            transform.translation.y =
-                transform.translation.y + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            transform.translation.y = transform.translation.y
+                + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
         } else {
-            transform.translation.y =
-                transform.translation.y - projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
+            transform.translation.y = transform.translation.y
+                - projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
         }
-
-
 
         let proj_size = assets.get(img_handle).unwrap().size();
 

@@ -175,7 +175,7 @@ struct Enemy {
     pub collision_damage: u32,
     pub bounty: u32,
     pub speed: f32,
-    pub weapon: Weapon,
+    pub weapon: Option<Weapon>,
 }
 
 impl Enemy {
@@ -202,7 +202,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 35,
             bounty: 120,
-            weapon: Weapon::stomp(false),
+            weapon: Some(Weapon::stomp(false)),
         }
     }
 
@@ -215,7 +215,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 75,
             bounty: 250,
-            weapon: Weapon::grim(false),
+            weapon: Some(Weapon::grim(false)),
         }
     }
 
@@ -228,7 +228,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 55,
             bounty: 180,
-            weapon: Weapon::hammer(false),
+            weapon: Some(Weapon::hammer(false)),
         }
     }
 
@@ -241,8 +241,7 @@ impl Enemy {
             speed: speed,
             collision_damage: 13,
             bounty: 35,
-            // TODO: Remove Weapon from this enemy.
-            weapon: Weapon::hammer(false),
+            weapon: None,
         }
     }
 
