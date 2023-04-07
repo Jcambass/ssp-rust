@@ -1,6 +1,6 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{AppState, Player, ORIGINAL_TARGET_FPS, ACTOR_LAYER, MyAssets, Projectile};
+use crate::{AppState, Player, ORIGINAL_TARGET_FPS};
 
 pub struct PlayerControlPlugin;
 
@@ -8,79 +8,9 @@ impl Plugin for PlayerControlPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems((
             player_movement,
-            player_shoot,
-            projectile_move
         ).in_set(OnUpdate(AppState::InGame)));
     }
 }
-
-fn player_shoot(
-    time: Res<Time>,
-    mut commands: Commands,
-    keyboard_input: Res<Input<KeyCode>>,
-    mut player_position: Query<(&mut Player, &mut Transform, &Handle<Image>)>,
-    assets: Res<Assets<Image>>,
-    my_assets: Res<MyAssets>,
-) {
-    let (mut player, transform, player_img_handle) = player_position.single_mut();
-    let player_size = assets.get(player_img_handle).unwrap().size();
-
-    let weapon = player.current_weapon();
-    weapon.cooldown_timer.tick(time.delta());
-
-    if keyboard_input.just_pressed(KeyCode::J) && weapon.cooldown_timer.finished() {
-        for pos in &weapon.gun_positions {
-            let texture = weapon.projectile.image(&my_assets);
-            let projectile_size = assets.get(&texture).unwrap().size();
-
-            commands.spawn((
-                SpriteBundle {
-                    texture: texture,
-                    transform: Transform::from_xyz(
-                        transform.translation.x + weapon.mounting_point.translation.x + pos.translation.x,
-                        transform.translation.y + weapon.mounting_point.translation.y + pos.translation.y + player_size.y/2.0 + projectile_size.y/2.0,
-                        ACTOR_LAYER,
-                    ),
-                    ..default()
-                },
-                weapon.projectile,
-            ));
-        }
-        weapon.cooldown_timer.reset()
-    }
-}
-
-fn projectile_move(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut projectiles: Query<(Entity, &mut Projectile, &mut Transform, &Handle<Image>)>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
-    assets: Res<Assets<Image>>,
-) {
-    let window = window_query.single();
-
-    for (proj_entity, projectile, mut transform, img_handle) in &mut projectiles {
-        transform.translation.y = transform.translation.y + projectile.speed * time.delta_seconds() * ORIGINAL_TARGET_FPS;
-
-        let proj_size = assets.get(img_handle).unwrap().size();
-
-        if projectile_past_top(transform.translation.y, window, proj_size) || projectile_past_bottom(transform.translation.y, window, proj_size) {
-            commands.entity(proj_entity).despawn();
-        }
-    }
-}
-
-// TODO: DRYup helpers like that.
-fn projectile_past_top(y: f32, window: &Window, proj_size: Vec2) -> bool {
-    let max_y = (window.height() / 2.) + (proj_size.y / 2.);
-    y > max_y
-}
-
-fn projectile_past_bottom(y: f32, window: &Window, proj_size: Vec2) -> bool {
-    let min_y = -(window.height() / 2.) - (proj_size.y / 2.);
-    y < min_y
-}
-
 
 fn player_movement(
     time: Res<Time>,

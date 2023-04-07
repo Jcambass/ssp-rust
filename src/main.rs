@@ -13,6 +13,7 @@ use rand::Rng;
 pub mod backdrop;
 pub mod enemy_spawning;
 pub mod player_control;
+pub mod shooting;
 pub mod ui;
 
 const EARTH_HEALTH: u32 = 5000;
@@ -56,7 +57,6 @@ fn main() {
         .add_systems(
             (
                 despawn_enemies,
-                projectile_collision,
                 enemy_collision,
                 animate_sprite,
                 check_game_over,
@@ -69,6 +69,7 @@ fn main() {
         .add_plugin(backdrop::BackdropPlugin)
         .add_plugin(enemy_spawning::EnemySpawningPlugin)
         .add_plugin(player_control::PlayerControlPlugin)
+        .add_plugin(shooting::ShootingPlugin)
         .add_plugin(ui::UiOverlayPlugin)
         .add_plugin(WorldInspectorPlugin::new())
         .run();
@@ -85,7 +86,7 @@ enum AppState {
 }
 
 #[derive(AssetCollection, Resource)]
-struct MyAssets {
+pub struct MyAssets {
     #[asset(path = "player.png")]
     player: Handle<Image>,
     #[asset(path = "ships/BigShip.png")]
@@ -156,198 +157,6 @@ impl Player {
 
     pub fn current_weapon(&mut self) -> &mut Weapon {
         &mut self.weapons[self.current_weapon_index]
-    }
-}
-
-#[derive(Clone, Copy)]
-enum ProjectileType {
-    Blaster,
-    Grim,
-    Hammer,
-    Ratata,
-    Stomp,
-}
-
-#[derive(Component, Clone, Copy)]
-struct Projectile {
-    pub speed: f32,
-    pub damage: u32,
-    pub friendly: bool,
-    pub projectile_type: ProjectileType,
-}
-
-impl Projectile {
-    pub fn image(&self, assets: &Res<MyAssets>) -> Handle<Image> {
-        match self.projectile_type{
-            ProjectileType::Blaster => assets.blaster.clone(),
-            ProjectileType::Grim => assets.grim.clone(),
-            ProjectileType::Hammer => assets.hammer.clone(),
-            ProjectileType::Ratata => assets.ratata.clone(),
-            ProjectileType::Stomp => assets.stomp.clone(),
-        }
-    }
-}
-
-#[derive(Component)]
-struct Weapon {
-    pub name: String,
-    pub cooldown_timer: Timer,
-    pub gun_positions: Vec<Transform>,
-    pub mounting_point: Transform,
-    pub projectile: Projectile,
-}
-
-impl Weapon {
-    pub fn stomp(friendly: bool) -> Self {
-        let mut cooldown = 5.0/ORIGINAL_TARGET_FPS;
-        if !friendly {
-            cooldown *= 2.0
-        }
-
-        Weapon {
-            name: String::from("Stomp O´ Matic"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
-            projectile: if friendly {
-                Projectile {
-                    friendly: true,
-                    speed: 13.0,
-                    damage: 6,
-                    projectile_type: ProjectileType::Stomp,
-                }
-            } else {
-                Projectile {
-                    friendly: false,
-                    speed: 10.0,
-                    damage: 6,
-                    projectile_type: ProjectileType::Stomp,
-                }
-            }
-        }
-    }
-
-    pub fn blaster(friendly: bool) -> Self {
-        let mut cooldown = 2300.0 / 40.0/ORIGINAL_TARGET_FPS;
-        if !friendly {
-            cooldown *= 2.0
-        }
-
-        Weapon {
-            name: String::from("Space Blaster"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
-            projectile: if friendly {
-                Projectile {
-                    friendly: true,
-                    speed: 15.0,
-                    damage: 12,
-                    projectile_type: ProjectileType::Blaster,
-                }
-            } else {
-                Projectile {
-                    friendly: false,
-                    speed: 5.0,
-                    damage: 50,
-                    projectile_type: ProjectileType::Blaster,
-                }
-            }
-        }
-    }
-
-    pub fn grim(friendly: bool) -> Self {
-        let mut cooldown = 2500.0 / 40.0/ORIGINAL_TARGET_FPS;
-        if !friendly {
-            cooldown *= 2.0
-        }
-
-        Weapon {
-            name: String::from("Grim Reaper"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
-            projectile: if friendly {
-                Projectile {
-                    friendly: true,
-                    speed: 5.0,
-                    damage: 50,
-                    projectile_type: ProjectileType::Grim,
-                }
-            } else {
-                Projectile {
-                    friendly: false,
-                    speed: 4.0,
-                    damage: 40,
-                    projectile_type: ProjectileType::Grim,
-                }
-            }
-        }
-    }
-
-    pub fn hammer(friendly: bool) -> Self {
-        let mut cooldown = 2000.0 / 40.0/ORIGINAL_TARGET_FPS;
-        if !friendly {
-            cooldown *= 2.0
-        }
-
-        Weapon {
-            name: String::from("Space Hammer"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![
-                Transform::from_xyz(-24.0, 0.0, 0.0),
-                Transform::from_xyz(0.0, 0.0, 0.0),
-                Transform::from_xyz(24.0, 0.0, 0.0),
-            ],
-            projectile: if friendly {
-                Projectile {
-                    friendly: true,
-                    speed: 10.0,
-                    damage: 4,
-                    projectile_type: ProjectileType::Hammer,
-                }
-            } else {
-                Projectile {
-                    friendly: false,
-                    speed: 7.0,
-                    damage: 4,
-                    projectile_type: ProjectileType::Hammer,
-                }
-            }
-        }
-    }
-
-    pub fn ratata(friendly: bool) -> Self {
-        let mut cooldown = 4.0/ORIGINAL_TARGET_FPS;
-        if !friendly {
-            cooldown *= 2.0
-        }
-
-        Weapon {
-            name: String::from("Ratata 9000"),
-            cooldown_timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Once),
-            mounting_point: Transform::from_xyz(10.0, 6.5, 0.0),
-            gun_positions: vec![
-                Transform::from_xyz(-6.0, 0.0, 0.0),
-                Transform::from_xyz(6.0, 0.0, 0.0),
-            ],
-            projectile: if friendly {
-                Projectile {
-                    friendly: true,
-                    speed: 15.0,
-                    damage: 3,
-                    projectile_type: ProjectileType::Ratata,
-                }
-            } else {
-                Projectile {
-                    friendly: false,
-                    speed: 12.0,
-                    damage: 3,
-                    projectile_type: ProjectileType::Ratata,
-                }
-            }
-        }
     }
 }
 
@@ -521,6 +330,7 @@ fn animate_sprite(
 }
 
 use bevy::sprite::collide_aabb::collide;
+use shooting::Weapon;
 
 fn enemy_collision(
     mut commands: Commands,
@@ -564,79 +374,6 @@ fn enemy_collision(
                 animation_indices,
                 AnimationTimer(Timer::from_seconds(0.019, TimerMode::Repeating)),
             ));
-        }
-    }
-}
-
-fn projectile_collision(
-    mut commands: Commands,
-    mut game: ResMut<Game>,
-    assets: Res<Assets<Image>>,
-    player_query: Query<(Entity, &mut Player, &mut Transform, &mut Handle<Image>), (Without<Enemy>, Without<Projectile>)>,
-    mut enemies_query: Query<(Entity, &mut Enemy, &mut Transform, &mut Handle<Image>), (Without<Player>, Without<Projectile>)>,
-    mut projectiles: Query<(Entity, &mut Projectile, &mut Transform, &Handle<Image>), (Without<Enemy>, Without<Player>)>,
-    my_assets: Res<MyAssets>,
-) {
-    for (proj_entity, projectile, transform, img_handle) in &mut projectiles {
-        let projectile_size = assets.get(img_handle).unwrap().size();
-
-        if projectile.friendly {
-            for (enemy_entity, mut enemy, pos, img) in &mut enemies_query {
-                let enemy_size = assets.get(&img).unwrap().size();
-
-                if collide(
-                    pos.translation,
-                    enemy_size,
-                    transform.translation,
-                    projectile_size,
-                )
-                .is_some()
-                {
-                    commands.entity(proj_entity).despawn();
-
-                    enemy.health = if let Some(i) = enemy.health.checked_sub(projectile.damage) {
-                        i
-                    } else {
-                        0
-                    };
-
-                    if enemy.health == 0 {
-                        game.score += enemy.bounty;
-                        commands.entity(enemy_entity).despawn();
-
-                        let animation_indices = AnimationIndices { first: 0, last: 11 };
-                        commands.spawn((
-                            SpriteSheetBundle {
-                                texture_atlas: my_assets.explosion.clone(),
-                                sprite: TextureAtlasSprite::new(animation_indices.first),
-                                transform: Transform::from_xyz(pos.translation.x, pos.translation.y, 0.),
-                                ..default()
-                            },
-                            animation_indices,
-                            AnimationTimer(Timer::from_seconds(0.019, TimerMode::Repeating)),
-                        ));
-                    }
-                }
-            }
-        } else {
-            let (_player_entity, _player, pos, img) = player_query.single();
-            let player_size = assets.get(img).unwrap().size();
-
-            if collide(
-                pos.translation,
-                player_size,
-                transform.translation,
-                projectile_size,
-            )
-            .is_some()
-            {
-                commands.entity(proj_entity).despawn();
-                game.health = if let Some(i) = game.health.checked_sub(projectile.damage) {
-                    i
-                } else {
-                    0
-                };
-            }
         }
     }
 }
