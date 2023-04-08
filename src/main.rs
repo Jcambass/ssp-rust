@@ -1,7 +1,5 @@
 //! Renders a 2D scene containing a single, moving sprite.
 
-use std::time::Duration;
-
 use bevy::{
     prelude::*,
     window::{PresentMode, PrimaryWindow},
@@ -17,7 +15,7 @@ pub mod shooting;
 pub mod ui;
 
 const EARTH_HEALTH: u32 = 5000;
-const PLAYER_HEALTH: u32 = 100;
+const PLAYER_HEALTH: u32 = 1000; // TODO: Switch back
 
 const BACKGROUND_LAYER: f32 = 0.0;
 const ACTOR_LAYER: f32 = 1.0;
@@ -51,8 +49,10 @@ fn main() {
             health: PLAYER_HEALTH,
             earth_health: EARTH_HEALTH,
             score: 0,
+            level: 1,
         })
         // TODO: Find a way so that it doesn't run when unpausing the game
+        .add_event::<LevelUpEvent>()
         .add_system(setup.in_schedule(OnExit(AppState::Loading)))
         .add_systems(
             (
@@ -62,6 +62,7 @@ fn main() {
                 check_game_over,
                 check_game_won.after(check_game_over),
                 check_game_paused,
+                check_player_level_up,
             )
                 .in_set(OnUpdate(AppState::InGame)),
         )
@@ -71,7 +72,7 @@ fn main() {
         .add_plugin(player_control::PlayerControlPlugin)
         .add_plugin(shooting::ShootingPlugin)
         .add_plugin(ui::UiOverlayPlugin)
-        .add_plugin(WorldInspectorPlugin::new())
+        //.add_plugin(WorldInspectorPlugin::new())
         .run();
 }
 
@@ -255,11 +256,13 @@ impl Enemy {
     }
 }
 
+// TODO: Move Health and Score to Player.
 #[derive(Resource)]
 struct Game {
     pub health: u32,
     pub earth_health: u32,
     pub score: u32,
+    pub level: u32,
 }
 
 fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
@@ -410,5 +413,19 @@ fn check_game_over(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>)
 fn check_game_won(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>) {
     if game.score >= 8000 {
         next_state.set(AppState::GameWon);
+    }
+}
+
+struct LevelUpEvent;
+
+fn check_player_level_up(
+    mut game: ResMut<Game>,
+    mut ev_levelup: EventWriter<LevelUpEvent>,
+) {
+    if game.score > game.level * 1000 {
+        if game.level < 5 {
+            game.level += 1;
+            ev_levelup.send(LevelUpEvent)
+        }
     }
 }

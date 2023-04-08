@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{AppState, Game, EARTH_HEALTH, PLAYER_HEALTH};
+use crate::{AppState, Game, EARTH_HEALTH, PLAYER_HEALTH, LevelUpEvent};
 
 pub struct UiOverlayPlugin;
 
@@ -11,6 +11,7 @@ impl Plugin for UiOverlayPlugin {
         app.add_system(setup_ui.in_schedule(OnExit(AppState::Loading)))
             .add_system(clear_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(update_stats.in_set(OnUpdate(AppState::InGame)))
+            .add_system(level_up_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)))
             .add_system(pause_screen.in_schedule(OnEnter(AppState::Paused)))
             .add_system(clear_msg_now.in_schedule(OnExit(AppState::Paused)));
@@ -124,6 +125,33 @@ fn update_stats(
     set.p0().single_mut().sections[1].value = format!("{}", game.health);
     set.p1().single_mut().sections[1].value = format!("{}", game.earth_health);
     set.p2().single_mut().sections[1].value = format!("{}", game.score);
+}
+
+fn level_up_msg(
+    mut query: Query<&mut Text, With<MessageText>>,
+    mut config: ResMut<MessageConfig>,
+    mut ev_levelup: EventReader<LevelUpEvent>,
+    asset_server: Res<AssetServer>,
+    game: Res<Game>,
+) {
+    for _ev in ev_levelup.iter() {
+        // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
+        let text_style = TextStyle {
+            font: asset_server.load("fonts/impact.ttf"),
+            font_size: 42.0,
+            color: Color::WHITE,
+        };
+
+        let mut text = query.single_mut();
+        text.sections = vec![
+            TextSection::new("LEVEL UP! New weapon in slot ", text_style.clone()),
+            TextSection::new(game.level.to_string(), text_style.clone()),
+            TextSection::new(" unlocked.", text_style.clone()),
+
+        ];
+
+        config.msg_timer = Timer::new(Duration::from_secs_f32(3.0), TimerMode::Once);
+    }
 }
 
 fn gameover_screen(
