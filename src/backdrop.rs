@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 
-use crate::{AppState, MyAssets, BACKGROUND_LAYER, ORIGINAL_TARGET_FPS};
+use crate::{AppState, MyAssets, ORIGINAL_TARGET_FPS, Layers};
 
 const MIN_STAR_SPAWN_SECONDS: f32 = 1.0;
 const MAX_STAR_SPAWN_SECONDS: f32 = 2.4;
@@ -79,7 +79,7 @@ fn setup_initial_backdrop(
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
                     rand::thread_rng().gen_range(min_y_offset..max_y_offset),
-                    BACKGROUND_LAYER,
+                    Layers::Stars.order_nr(),
                 ),
                 ..default()
             },
@@ -89,34 +89,34 @@ fn setup_initial_backdrop(
 
     let planet = Obstacle::planet();
 
-        let next_planet_type = rand::thread_rng().gen_range(0..100);
-        let img_handle = if next_planet_type < 45 {
-            my_assets.planet01.clone()
-        } else if next_planet_type < 70 {
-            my_assets.planet02.clone()
-        } else if next_planet_type < 95 {
-            my_assets.planet03.clone()
-        } else {
-            my_assets.planet04.clone()
-        };
+    let next_planet_type = rand::thread_rng().gen_range(0..100);
+    let img_handle = if next_planet_type < 45 {
+        my_assets.planet01.clone()
+    } else if next_planet_type < 70 {
+        my_assets.planet02.clone()
+    } else if next_planet_type < 95 {
+        my_assets.planet03.clone()
+    } else {
+        my_assets.planet04.clone()
+    };
 
-        let img_size = assets.get(&img_handle).unwrap().size();
+    let img_size = assets.get(&img_handle).unwrap().size();
 
-        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
-        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+    let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
+    let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
 
-        commands.spawn((
-            SpriteBundle {
-                texture: img_handle,
-                transform: Transform::from_xyz(
-                    rand::thread_rng().gen_range(min_x_offset..max_x_offset),
-                    (window.height() / 2.) - (img_size.y / 2.),
-                    BACKGROUND_LAYER,
-                ),
-                ..default()
-            },
-            planet,
-        ));
+    commands.spawn((
+        SpriteBundle {
+            texture: img_handle,
+            transform: Transform::from_xyz(
+                rand::thread_rng().gen_range(min_x_offset..max_x_offset),
+                (window.height() / 2.) - (img_size.y / 2.),
+                Layers::Planets.order_nr(),
+            ),
+            ..default()
+        },
+        planet,
+    ));
 }
 
 fn setup_backdrop_spawning(mut commands: Commands) {
@@ -177,7 +177,7 @@ fn spawn_stars(
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
                     (window.height() / 2.) + (img_size.y / 2.),
-                    BACKGROUND_LAYER,
+                    Layers::Stars.order_nr(),
                 ),
                 ..default()
             },
@@ -228,7 +228,7 @@ fn spawn_planets(
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
                     (window.height() / 2.) + (img_size.y / 2.),
-                    BACKGROUND_LAYER,
+                    Layers::Planets.order_nr(),
                 ),
                 ..default()
             },

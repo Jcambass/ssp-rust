@@ -17,8 +17,27 @@ pub mod ui;
 const EARTH_HEALTH: u32 = 5000;
 const PLAYER_HEALTH: u32 = 100;
 
-const BACKGROUND_LAYER: f32 = 0.0;
-const ACTOR_LAYER: f32 = 1.0;
+pub enum Layers {
+    Backdrop,
+    Stars,
+    Planets,
+    Projectiles,
+    Actors,
+    UI
+}
+
+impl Layers {
+    pub fn order_nr(&self) -> f32 {
+        match self {
+            Layers::Backdrop => 0.0,
+            Layers::Stars => 0.1,
+            Layers::Planets => 0.2,
+            Layers::Projectiles => 0.3,
+            Layers::Actors => 0.4,
+            Layers::UI => 0.5,
+        }
+    }
+}
 
 const ORIGINAL_TARGET_FPS: f32 = 40.0;
 
@@ -270,7 +289,7 @@ fn setup(mut commands: Commands, my_assets: Res<MyAssets>) {
     commands.spawn((
         SpriteBundle {
             texture: my_assets.player.clone(),
-            transform: Transform::from_xyz(0., 0., ACTOR_LAYER),
+            transform: Transform::from_xyz(0., 0., Layers::Actors.order_nr()),
             ..default()
         },
         Player::new(),

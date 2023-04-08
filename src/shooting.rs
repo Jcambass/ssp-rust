@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
 
 use crate::{
-    AnimationIndices, AnimationTimer, AppState, Enemy, Game, MyAssets, Player, ACTOR_LAYER,
+    AnimationIndices, AnimationTimer, AppState, Enemy, Game, MyAssets, Player, Layers,
     ORIGINAL_TARGET_FPS,
 };
 
@@ -267,7 +267,7 @@ fn player_shoot(
                             + pos.translation.y
                             + player_size.y / 2.0
                             + projectile_size.y / 2.0,
-                        ACTOR_LAYER,
+                        Layers::Projectiles.order_nr()
                     ),
                     ..default()
                 },
@@ -335,7 +335,7 @@ fn enemy_shoot(
                                     + pos.translation.y
                                     - enemy_size.y / 2.0
                                     - projectile_size.y / 2.0,
-                                ACTOR_LAYER,
+                                Layers::Projectiles.order_nr(),
                             ),
                             sprite: Sprite {
                                 flip_y: true,

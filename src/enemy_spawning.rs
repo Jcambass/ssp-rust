@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 
-use crate::{AppState, Enemy, MyAssets, ACTOR_LAYER, ORIGINAL_TARGET_FPS};
+use crate::{AppState, Enemy, MyAssets, ORIGINAL_TARGET_FPS, Layers};
 
 const MIN_SPAWN_SECONDS: f32 = 1.0;
 const MAX_SPAWN_SECONDS: f32 = 5.5;
@@ -63,7 +63,7 @@ fn spawn_enemy(
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
                     (window.height() / 2.) + (img_size.y / 2.),
-                    ACTOR_LAYER,
+                    Layers::Actors.order_nr(),
                 ),
                 ..default()
             },
