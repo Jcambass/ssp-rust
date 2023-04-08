@@ -86,6 +86,37 @@ fn setup_initial_backdrop(
             star,
         ));
     }
+
+    let planet = Obstacle::planet();
+
+        let next_planet_type = rand::thread_rng().gen_range(0..100);
+        let img_handle = if next_planet_type < 45 {
+            my_assets.planet01.clone()
+        } else if next_planet_type < 70 {
+            my_assets.planet02.clone()
+        } else if next_planet_type < 95 {
+            my_assets.planet03.clone()
+        } else {
+            my_assets.planet04.clone()
+        };
+
+        let img_size = assets.get(&img_handle).unwrap().size();
+
+        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
+        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+
+        commands.spawn((
+            SpriteBundle {
+                texture: img_handle,
+                transform: Transform::from_xyz(
+                    rand::thread_rng().gen_range(min_x_offset..max_x_offset),
+                    (window.height() / 2.) - (img_size.y / 2.),
+                    BACKGROUND_LAYER,
+                ),
+                ..default()
+            },
+            planet,
+        ));
 }
 
 fn setup_backdrop_spawning(mut commands: Commands) {
@@ -176,7 +207,6 @@ fn spawn_planets(
         let planet = Obstacle::planet();
 
         let next_planet_type = rand::thread_rng().gen_range(0..100);
-
         let img_handle = if next_planet_type < 45 {
             my_assets.planet01.clone()
         } else if next_planet_type < 70 {
