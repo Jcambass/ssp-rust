@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{AppState, Game, EARTH_HEALTH, PLAYER_HEALTH, LevelUpEvent};
+use crate::{AppState, Game, LevelUpEvent, EARTH_HEALTH, PLAYER_HEALTH, shooting::WeaponSwitchedEvent, Player};
 
 pub struct UiOverlayPlugin;
 
@@ -12,6 +12,7 @@ impl Plugin for UiOverlayPlugin {
             .add_system(clear_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(update_stats.in_set(OnUpdate(AppState::InGame)))
             .add_system(level_up_msg.in_set(OnUpdate(AppState::InGame)))
+            .add_system(weapon_switched_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)))
             .add_system(pause_screen.in_schedule(OnEnter(AppState::Paused)))
             .add_system(clear_msg_now.in_schedule(OnExit(AppState::Paused)));
@@ -147,10 +148,36 @@ fn level_up_msg(
             TextSection::new("LEVEL UP! New weapon in slot ", text_style.clone()),
             TextSection::new(game.level.to_string(), text_style.clone()),
             TextSection::new(" unlocked.", text_style.clone()),
-
         ];
 
         config.msg_timer = Timer::new(Duration::from_secs_f32(3.0), TimerMode::Once);
+    }
+}
+
+fn weapon_switched_msg(
+    mut query: Query<&mut Text, With<MessageText>>,
+    mut config: ResMut<MessageConfig>,
+    mut ev_weaponswitched: EventReader<WeaponSwitchedEvent>,
+    asset_server: Res<AssetServer>,
+    mut player_query: Query<(&mut Player, &mut Transform, &mut Handle<Image>)>,
+) {
+    let (mut player, _pos, _img) = player_query.single_mut();
+
+    for _ev in ev_weaponswitched.iter() {
+        // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
+        let text_style = TextStyle {
+            font: asset_server.load("fonts/impact.ttf"),
+            font_size: 42.0,
+            color: Color::WHITE,
+        };
+
+        let mut text = query.single_mut();
+        text.sections = vec![
+            TextSection::new(player.current_weapon().name.to_string(), text_style.clone()),
+            TextSection::new(" equipped.", text_style.clone()),
+        ];
+
+        config.msg_timer = Timer::new(Duration::from_secs_f32(1.0), TimerMode::Once);
     }
 }
 

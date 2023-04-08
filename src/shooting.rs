@@ -11,12 +11,13 @@ pub struct ShootingPlugin;
 
 impl Plugin for ShootingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.add_event::<WeaponSwitchedEvent>().add_systems(
             (
                 player_shoot,
                 enemy_shoot,
                 projectile_move,
                 projectile_collision,
+                weapon_switching,
             )
                 .in_set(OnUpdate(AppState::InGame)),
         );
@@ -243,7 +244,9 @@ fn player_shoot(
     let weapon = player.current_weapon();
     weapon.cooldown_timer.tick(time.delta());
 
-    if keyboard_input.just_pressed(KeyCode::J) && (weapon.cooldown_timer.finished() || weapon.cooldown_timer.paused()) {
+    if keyboard_input.just_pressed(KeyCode::J)
+        && (weapon.cooldown_timer.finished() || weapon.cooldown_timer.paused())
+    {
         if weapon.cooldown_timer.paused() {
             weapon.cooldown_timer.unpause();
         }
@@ -470,6 +473,52 @@ fn projectile_collision(
                     0
                 };
             }
+        }
+    }
+}
+
+pub struct WeaponSwitchedEvent;
+
+fn weapon_switching(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut player_query: Query<(&mut Player, &mut Transform, &Handle<Image>)>,
+    mut ev_weaponswitched: EventWriter<WeaponSwitchedEvent>,
+    game: Res<Game>,
+) {
+    let (mut player, _transform, _player_img_handle) = player_query.single_mut();
+
+    if keyboard_input.just_pressed(KeyCode::Key1) {
+        if player.current_weapon_index != 0 {
+            player.current_weapon_index = 0;
+            ev_weaponswitched.send(WeaponSwitchedEvent);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Key2) && game.level >= 2 {
+        if player.current_weapon_index != 1 {
+            player.current_weapon_index = 1;
+            ev_weaponswitched.send(WeaponSwitchedEvent);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Key3) && game.level >= 3 {
+        if player.current_weapon_index != 2 {
+            player.current_weapon_index = 2;
+            ev_weaponswitched.send(WeaponSwitchedEvent);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Key4) && game.level >= 4 {
+        if player.current_weapon_index != 3 {
+            player.current_weapon_index = 3;
+            ev_weaponswitched.send(WeaponSwitchedEvent);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::Key5) && game.level >= 5 {
+        if player.current_weapon_index != 4 {
+            player.current_weapon_index = 4;
+            ev_weaponswitched.send(WeaponSwitchedEvent);
         }
     }
 }

@@ -418,10 +418,7 @@ fn check_game_won(game: Res<Game>, mut next_state: ResMut<NextState<AppState>>) 
 
 struct LevelUpEvent;
 
-fn check_player_level_up(
-    mut game: ResMut<Game>,
-    mut ev_levelup: EventWriter<LevelUpEvent>,
-) {
+fn check_player_level_up(mut game: ResMut<Game>, mut ev_levelup: EventWriter<LevelUpEvent>) {
     if game.score > game.level * 1000 {
         if game.level < 5 {
             game.level += 1;
