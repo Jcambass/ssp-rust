@@ -15,7 +15,7 @@ pub mod shooting;
 pub mod ui;
 
 const EARTH_HEALTH: u32 = 5000;
-const PLAYER_HEALTH: u32 = 1000; // TODO: Switch back
+const PLAYER_HEALTH: u32 = 100;
 
 const BACKGROUND_LAYER: f32 = 0.0;
 const ACTOR_LAYER: f32 = 1.0;

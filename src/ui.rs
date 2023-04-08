@@ -14,6 +14,7 @@ impl Plugin for UiOverlayPlugin {
             .add_system(level_up_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(weapon_switched_msg.in_set(OnUpdate(AppState::InGame)))
             .add_system(gameover_screen.in_schedule(OnEnter(AppState::GameOver)))
+            .add_system(gamewon_screen.in_schedule(OnEnter(AppState::GameWon)))
             .add_system(pause_screen.in_schedule(OnEnter(AppState::Paused)))
             .add_system(clear_msg_now.in_schedule(OnExit(AppState::Paused)));
     }
@@ -198,6 +199,30 @@ fn gameover_screen(
         TextSection::new("GAME OVER!\n", text_style.clone()),
         TextSection::new("YOUR SCORE: ", text_style.clone()),
         TextSection::new(game.score.to_string(), text_style.clone()),
+    ];
+}
+
+
+fn gamewon_screen(
+    mut query: Query<&mut Text, With<MessageText>>,
+    asset_server: Res<AssetServer>,
+    game: Res<Game>,
+) {
+    // TODO: Text seems to render differently than original despite using the same font (double check) and same font size.
+    let text_style = TextStyle {
+        font: asset_server.load("fonts/impact.ttf"),
+        font_size: 42.0,
+        color: Color::WHITE,
+    };
+
+    let mut text = query.single_mut();
+    text.sections = vec![
+        TextSection::new("VICTORY - YOU HAVE SUCCESSFULLY PROTECTED EARTH!!!\n", text_style.clone()),
+        TextSection::new("YOUR SCORE: ", text_style.clone()),
+        TextSection::new(game.score.to_string(), text_style.clone()),
+        TextSection::new("\n", text_style.clone()),
+        TextSection::new("YOUR FINAL SCORE: ", text_style.clone()),
+        TextSection::new((game.score + game.earth_health + game.health).to_string(), text_style.clone()),
     ];
 }
 
