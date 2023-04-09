@@ -2,7 +2,6 @@
 
 use bevy::{
     prelude::*,
-    render::render_resource::FilterMode,
     window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
@@ -64,7 +63,6 @@ fn main() {
                     }),
                     ..default()
                 })
-                .set(ImagePlugin::default_nearest()),
         )
         .add_state::<AppState>()
         .add_loading_state(LoadingState::new(AppState::Loading).continue_to_state(AppState::InGame))
@@ -124,6 +122,8 @@ pub struct MyAssets {
     trespasser: Handle<Image>,
     #[asset(path = "backdrop/star.png")]
     star: Handle<Image>,
+    #[asset(path = "backdrop/planet00.png")]
+    planet00: Handle<Image>,
     #[asset(path = "backdrop/planet01.png")]
     planet01: Handle<Image>,
     #[asset(path = "backdrop/planet02.png")]
@@ -132,6 +132,16 @@ pub struct MyAssets {
     planet03: Handle<Image>,
     #[asset(path = "backdrop/planet04.png")]
     planet04: Handle<Image>,
+    #[asset(path = "backdrop/planet05.png")]
+    planet05: Handle<Image>,
+    #[asset(path = "backdrop/planet06.png")]
+    planet06: Handle<Image>,
+    #[asset(path = "backdrop/planet07.png")]
+    planet07: Handle<Image>,
+    #[asset(path = "backdrop/planet08.png")]
+    planet08: Handle<Image>,
+    #[asset(path = "backdrop/planet09.png")]
+    planet09: Handle<Image>,
     #[asset(texture_atlas(
         tile_size_x = 134.,
         tile_size_y = 134.,

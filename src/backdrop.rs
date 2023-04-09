@@ -89,15 +89,18 @@ fn setup_initial_backdrop(
 
     let planet = Obstacle::planet();
 
-    let next_planet_type = rand::thread_rng().gen_range(0..100);
-    let img_handle = if next_planet_type < 45 {
-        my_assets.planet01.clone()
-    } else if next_planet_type < 70 {
-        my_assets.planet02.clone()
-    } else if next_planet_type < 95 {
-        my_assets.planet03.clone()
-    } else {
-        my_assets.planet04.clone()
+    let next_planet_type = rand::thread_rng().gen_range(0..10);
+    let img_handle = match next_planet_type {
+        0 => my_assets.planet00.clone(),
+        1 => my_assets.planet01.clone(),
+        2 => my_assets.planet02.clone(),
+        3 => my_assets.planet03.clone(),
+        4 => my_assets.planet04.clone(),
+        5 => my_assets.planet05.clone(),
+        6 => my_assets.planet06.clone(),
+        7 => my_assets.planet07.clone(),
+        8 => my_assets.planet08.clone(),
+        _ => my_assets.planet09.clone(),
     };
 
     let img_size = assets.get(&img_handle).unwrap().size();
@@ -206,15 +209,18 @@ fn spawn_planets(
 
         let planet = Obstacle::planet();
 
-        let next_planet_type = rand::thread_rng().gen_range(0..100);
-        let img_handle = if next_planet_type < 45 {
-            my_assets.planet01.clone()
-        } else if next_planet_type < 70 {
-            my_assets.planet02.clone()
-        } else if next_planet_type < 95 {
-            my_assets.planet03.clone()
-        } else {
-            my_assets.planet04.clone()
+        let next_planet_type = rand::thread_rng().gen_range(0..10);
+        let img_handle = match next_planet_type {
+            0 => my_assets.planet00.clone(),
+            1 => my_assets.planet01.clone(),
+            2 => my_assets.planet02.clone(),
+            3 => my_assets.planet03.clone(),
+            4 => my_assets.planet04.clone(),
+            5 => my_assets.planet05.clone(),
+            6 => my_assets.planet06.clone(),
+            7 => my_assets.planet07.clone(),
+            8 => my_assets.planet08.clone(),
+            _ => my_assets.planet09.clone(),
         };
 
         let img_size = assets.get(&img_handle).unwrap().size();
