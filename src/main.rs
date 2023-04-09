@@ -68,7 +68,7 @@ fn main() {
             health: PLAYER_HEALTH,
             earth_health: EARTH_HEALTH,
             score: 0,
-            level: 5,
+            level: 1,
         })
         // TODO: Find a way so that it doesn't run when unpausing the game
         .add_event::<LevelUpEvent>()
