@@ -35,7 +35,7 @@ pub struct MessageText;
 fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
     let text_style = TextStyle {
         font: asset_server.load("fonts/impact.ttf"),
-        font_size: 32.0,
+        font_size: 39.0,
         color: Color::WHITE,
     };
 
@@ -48,6 +48,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         .with_text_alignment(TextAlignment::Center)
         .with_style(Style {
             position_type: PositionType::Absolute,
+            margin: UiRect::new(Val::Px(12.0), Val::Px(0.0), Val::Px(6.0), Val::Px(0.0)),
             position: UiRect::default(),
             ..default()
         }),
@@ -58,6 +59,7 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn(NodeBundle {
             style: Style {
                 size: Size::width(Val::Percent(100.0)),
+                margin: UiRect::all(Val::Px(6.0)),
                 flex_direction: FlexDirection::Column,
                 justify_content: JustifyContent::SpaceBetween,
                 align_items: AlignItems::Center,
@@ -75,6 +77,8 @@ fn setup_ui(mut commands: Commands, asset_server: Res<AssetServer>) {
                 EarthHealthText,
             ));
 
+            // TODO: Move this text a bit higher.
+            // Original has 270 as y which might be somthing like +32.5 for us.
             parent.spawn((
                 TextBundle::from_sections([TextSection::new(
                     "PROTECT EARTH AS LONG AS YOU CAN!!!",
