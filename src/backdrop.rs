@@ -8,8 +8,8 @@ use crate::{AppState, Layers, MyAssets, ORIGINAL_TARGET_FPS};
 const MIN_STAR_SPAWN_SECONDS: f32 = 1.0;
 const MAX_STAR_SPAWN_SECONDS: f32 = 2.4;
 
-const MIN_PLANET_SPAWN_SECONDS: f32 = 80.0;
-const MAX_PLANET_SPAWN_SECONDS: f32 = 240.0;
+const MIN_PLANET_SPAWN_SECONDS: f32 = 20.0;
+const MAX_PLANET_SPAWN_SECONDS: f32 = 80.0;
 
 pub struct BackdropPlugin;
 
@@ -111,8 +111,8 @@ fn setup_initial_backdrop(
 
     let img_size = assets.get(&img_handle).unwrap().size();
 
-    let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
-    let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+    let min_x_offset = -(window.width() / 2.0);
+    let max_x_offset = window.width() / 2.0;
 
     commands.spawn((
         SpriteBundle {
@@ -239,8 +239,8 @@ fn spawn_planets(
 
         let img_size = assets.get(&img_handle).unwrap().size();
 
-        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
-        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+        let min_x_offset = -(window.width() / 2.0);
+        let max_x_offset = window.width() / 2.0;
 
         commands.spawn((
             SpriteBundle {
