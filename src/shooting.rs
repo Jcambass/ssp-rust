@@ -242,8 +242,8 @@ impl Weapon {
             gun_positions: if friendly {
                 vec![
                     Transform::from_xyz(-PLAYER_WIDTH, 0.0, 0.0),
-                    Transform::from_xyz(-PLAYER_WIDTH + 10.0, 0.0, 0.0),
-                    Transform::from_xyz(PLAYER_WIDTH - 10.0, 0.0, 0.0),
+                    Transform::from_xyz(-PLAYER_WIDTH+10.0, 0.0, 0.0),
+                    Transform::from_xyz(PLAYER_WIDTH-10.0, 0.0, 0.0),
                     Transform::from_xyz(PLAYER_WIDTH, 0.0, 0.0),
                 ]
             } else {
@@ -483,6 +483,30 @@ fn projectile_collision(
                         0
                     };
 
+                    let hit_texture = match projectile.projectile_type {
+                        ProjectileType::Blaster => my_assets.hit_red.clone(),
+                        ProjectileType::Grim => my_assets.hit_blue.clone(),
+                        ProjectileType::Hammer => my_assets.hit_red.clone(),
+                        ProjectileType::Ratata => my_assets.hit_blue.clone(),
+                        ProjectileType::Stomp => my_assets.hit_green.clone(),
+                    };
+
+                    let animation_indices = AnimationIndices { first: 0, last: 1 };
+                    commands.spawn((
+                        SpriteSheetBundle {
+                            texture_atlas: hit_texture,
+                            sprite: TextureAtlasSprite::new(animation_indices.first),
+                            transform: Transform::from_xyz(
+                                transform.translation.x,
+                                transform.translation.y,
+                                Layers::Actors.order_nr(),
+                            ),
+                            ..default()
+                        },
+                        animation_indices,
+                        AnimationTimer(Timer::from_seconds(0.03, TimerMode::Repeating)),
+                    ));
+
                     if enemy.health == 0 {
                         game.score += enemy.bounty;
                         commands.entity(enemy_entity).despawn();
@@ -526,6 +550,30 @@ fn projectile_collision(
                 } else {
                     0
                 };
+
+                let hit_texture = match projectile.projectile_type {
+                    ProjectileType::Blaster => my_assets.hit_red.clone(),
+                    ProjectileType::Grim => my_assets.hit_blue.clone(),
+                    ProjectileType::Hammer => my_assets.hit_red.clone(),
+                    ProjectileType::Ratata => my_assets.hit_blue.clone(),
+                    ProjectileType::Stomp => my_assets.hit_green.clone(),
+                };
+
+                let animation_indices = AnimationIndices { first: 0, last: 1 };
+                commands.spawn((
+                    SpriteSheetBundle {
+                        texture_atlas: hit_texture,
+                        sprite: TextureAtlasSprite::new(animation_indices.first),
+                        transform: Transform::from_xyz(
+                            transform.translation.x,
+                            transform.translation.y,
+                            Layers::Actors.order_nr(),
+                        ),
+                        ..default()
+                    },
+                    animation_indices,
+                    AnimationTimer(Timer::from_seconds(0.03, TimerMode::Repeating)),
+                ));
             }
         }
     }

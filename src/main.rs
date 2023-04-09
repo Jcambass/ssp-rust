@@ -165,6 +165,42 @@ pub struct MyAssets {
     ratata: Handle<Image>,
     #[asset(path = "projectiles/stomp.png")]
     stomp: Handle<Image>,
+    #[asset(texture_atlas(
+        tile_size_x = 48.,
+        tile_size_y = 46.,
+        columns = 2,
+        rows = 1,
+        padding_x = 0.,
+        padding_y = 0.,
+        offset_x = 0.,
+        offset_y = 0.
+    ))]
+    #[asset(path = "projectiles/hit_red.png")]
+    hit_red: Handle<TextureAtlas>,
+    #[asset(texture_atlas(
+        tile_size_x = 48.,
+        tile_size_y = 46.,
+        columns = 2,
+        rows = 1,
+        padding_x = 0.,
+        padding_y = 0.,
+        offset_x = 0.,
+        offset_y = 0.
+    ))]
+    #[asset(path = "projectiles/hit_blue.png")]
+    hit_blue: Handle<TextureAtlas>,
+    #[asset(texture_atlas(
+        tile_size_x = 48.,
+        tile_size_y = 46.,
+        columns = 2,
+        rows = 1,
+        padding_x = 0.,
+        padding_y = 0.,
+        offset_x = 0.,
+        offset_y = 0.
+    ))]
+    #[asset(path = "projectiles/hit_green.png")]
+    hit_green: Handle<TextureAtlas>,
 }
 
 #[derive(Component)]
