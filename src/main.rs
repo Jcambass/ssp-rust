@@ -46,24 +46,21 @@ const ORIGINAL_TARGET_FPS: f32 = 40.0;
 
 fn main() {
     App::new()
-        .add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "SpaceShipProject Rust Edition!".into(),
-                        present_mode: PresentMode::AutoVsync,
-                        resolution: (1120., 605.).into(),
-                        // Tell wasm to use a specific canvas.
-                        canvas: Some(String::from("#mainScreen")),
-                        // Tells wasm NOT to resize the window according to the available canvas.
-                        fit_canvas_to_parent: false,
-                        // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
-                        prevent_default_event_handling: false,
-                        ..default()
-                    }),
-                    ..default()
-                })
-        )
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "SpaceShipProject Rust Edition!".into(),
+                present_mode: PresentMode::AutoVsync,
+                resolution: (1120., 605.).into(),
+                // Tell wasm to use a specific canvas.
+                canvas: Some(String::from("#mainScreen")),
+                // Tells wasm NOT to resize the window according to the available canvas.
+                fit_canvas_to_parent: false,
+                // Tells wasm not to override default event handling, like F5, Ctrl+R etc.
+                prevent_default_event_handling: false,
+                ..default()
+            }),
+            ..default()
+        }))
         .add_state::<AppState>()
         .add_loading_state(LoadingState::new(AppState::Loading).continue_to_state(AppState::InGame))
         .add_collection_to_loading_state::<_, MyAssets>(AppState::Loading)
@@ -71,7 +68,7 @@ fn main() {
             health: PLAYER_HEALTH,
             earth_health: EARTH_HEALTH,
             score: 0,
-            level: 1,
+            level: 5,
         })
         // TODO: Find a way so that it doesn't run when unpausing the game
         .add_event::<LevelUpEvent>()
