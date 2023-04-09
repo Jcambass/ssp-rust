@@ -242,8 +242,8 @@ impl Weapon {
             gun_positions: if friendly {
                 vec![
                     Transform::from_xyz(-PLAYER_WIDTH, 0.0, 0.0),
-                    Transform::from_xyz(-PLAYER_WIDTH+10.0, 0.0, 0.0),
-                    Transform::from_xyz(PLAYER_WIDTH-10.0, 0.0, 0.0),
+                    Transform::from_xyz(-PLAYER_WIDTH + 10.0, 0.0, 0.0),
+                    Transform::from_xyz(PLAYER_WIDTH - 10.0, 0.0, 0.0),
                     Transform::from_xyz(PLAYER_WIDTH, 0.0, 0.0),
                 ]
             } else {

@@ -119,6 +119,10 @@ pub struct MyAssets {
     trespasser: Handle<Image>,
     #[asset(path = "backdrop/star.png")]
     star: Handle<Image>,
+    #[asset(path = "backdrop/star1.png")]
+    star1: Handle<Image>,
+    #[asset(path = "backdrop/star2.png")]
+    star2: Handle<Image>,
     #[asset(path = "backdrop/planet00.png")]
     planet00: Handle<Image>,
     #[asset(path = "backdrop/planet01.png")]

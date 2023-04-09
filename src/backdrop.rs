@@ -15,7 +15,7 @@ pub struct BackdropPlugin;
 
 impl Plugin for BackdropPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(ClearColor(Color::BLACK))
+        app.insert_resource(ClearColor(Color::hex("#3a2e3f").unwrap()))
             .add_systems(
                 (setup_initial_backdrop, setup_backdrop_spawning)
                     .in_schedule(OnExit(AppState::Loading)),
@@ -61,30 +61,36 @@ fn setup_initial_backdrop(
 ) {
     let window = primary_query.single();
 
-    let img_handle = my_assets.star.clone();
-    let img_size = assets.get(&img_handle).unwrap().size();
-
-    let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
-    let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
-
-    let min_y_offset = -(window.height() / 2.0) + (img_size.y / 2.);
-    let max_y_offset = window.height() / 2.0 - (img_size.y / 2.);
-
     for _ in 0..30 {
+        let next_star_type = rand::thread_rng().gen_range(0..3);
+        let img_handle = match next_star_type {
+            0 => my_assets.star.clone(),
+            1 => my_assets.star1.clone(),
+            _ => my_assets.star2.clone(),
+        };
+
+        let img_size = assets.get(&img_handle).unwrap().size();
+
+        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
+        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+
+        let min_y_offset = -(window.height() / 2.0) + (img_size.y / 2.);
+        let max_y_offset = window.height() / 2.0 - (img_size.y / 2.);
+
         // TODO: Technicaly they have a slightly different speed here, but it's close enough for now.
         let star = Obstacle::star();
-        commands.spawn((
-            SpriteBundle {
-                texture: img_handle.clone(),
-                transform: Transform::from_xyz(
-                    rand::thread_rng().gen_range(min_x_offset..max_x_offset),
-                    rand::thread_rng().gen_range(min_y_offset..max_y_offset),
-                    Layers::Stars.order_nr(),
-                ),
-                ..default()
-            },
-            star,
-        ));
+        let mut sprite = SpriteBundle {
+            texture: img_handle.clone(),
+            transform: Transform::from_xyz(
+                rand::thread_rng().gen_range(min_x_offset..max_x_offset),
+                rand::thread_rng().gen_range(min_y_offset..max_y_offset),
+                Layers::Stars.order_nr(),
+            ),
+            ..default()
+        };
+
+        sprite.sprite.color.set_a(0.05);
+        commands.spawn((sprite, star));
     }
 
     let planet = Obstacle::planet();
@@ -167,15 +173,21 @@ fn spawn_stars(
             TimerMode::Once,
         );
 
-        let star = Obstacle::star();
-        let img_handle = my_assets.star.clone();
-        let img_size = assets.get(&img_handle).unwrap().size();
+        for _ in 0..3 {
+            let star = Obstacle::star();
+            let next_star_type = rand::thread_rng().gen_range(0..3);
+            let img_handle = match next_star_type {
+                0 => my_assets.star.clone(),
+                1 => my_assets.star1.clone(),
+                _ => my_assets.star2.clone(),
+            };
 
-        let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
-        let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+            let img_size = assets.get(&img_handle).unwrap().size();
 
-        commands.spawn((
-            SpriteBundle {
+            let min_x_offset = -(window.width() / 2.0) + (img_size.x / 2.);
+            let max_x_offset = window.width() / 2.0 - (img_size.x / 2.);
+
+            let mut sprite = SpriteBundle {
                 texture: img_handle,
                 transform: Transform::from_xyz(
                     rand::thread_rng().gen_range(min_x_offset..max_x_offset),
@@ -183,9 +195,11 @@ fn spawn_stars(
                     Layers::Stars.order_nr(),
                 ),
                 ..default()
-            },
-            star,
-        ));
+            };
+            sprite.sprite.color.set_a(0.05);
+
+            commands.spawn((sprite, star));
+        }
     }
 }
 
