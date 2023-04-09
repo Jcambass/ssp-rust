@@ -7,6 +7,8 @@ use crate::{
     ORIGINAL_TARGET_FPS,
 };
 
+const PLAYER_WIDTH: f32 = 49.5;
+
 pub struct ShootingPlugin;
 
 impl Plugin for ShootingPlugin {
@@ -76,7 +78,7 @@ impl Weapon {
             name: String::from("Stomp O´ Matic"),
             cooldown_timer: timer,
             mounting_point: if friendly {
-                Transform::from_xyz(-50.0, 6.5, 0.0)
+                Transform::from_xyz(-PLAYER_WIDTH, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
             },
@@ -114,7 +116,7 @@ impl Weapon {
             name: String::from("Space Blaster"),
             cooldown_timer: timer,
             mounting_point: if friendly {
-                Transform::from_xyz(-50.0, 6.5, 0.0)
+                Transform::from_xyz(-PLAYER_WIDTH, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
             },
@@ -152,7 +154,7 @@ impl Weapon {
             name: String::from("Grim Reaper"),
             cooldown_timer: timer,
             mounting_point: if friendly {
-                Transform::from_xyz(-50.0, 6.5, 0.0)
+                Transform::from_xyz(-PLAYER_WIDTH, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
             },
@@ -190,7 +192,7 @@ impl Weapon {
             name: String::from("Space Hammer"),
             cooldown_timer: timer,
             mounting_point: if friendly {
-                Transform::from_xyz(-50.0, 6.5, 0.0)
+                Transform::from_xyz(-PLAYER_WIDTH, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
             },
@@ -232,7 +234,7 @@ impl Weapon {
             name: String::from("Ratata 9000"),
             cooldown_timer: timer,
             mounting_point: if friendly {
-                Transform::from_xyz(-50.0, 6.5, 0.0)
+                Transform::from_xyz(-PLAYER_WIDTH, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
             },
