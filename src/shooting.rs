@@ -301,10 +301,16 @@ fn enemy_shoot(
             let (_player, player_pos, player_img) = player_query.single();
             let player_size = assets.get(&player_img).unwrap().size();
 
-            let aim_pos = transform.translation;
+            let aim_height = window.height() / 2.0 + transform.translation.y;
+            let aim_pos = Vec3 {
+                x: transform.translation.x,
+                y: transform.translation.y - aim_height/2.0,
+                z: Layers::Actors.order_nr(),
+            };
+
             let aim_size = Vec2 {
                 x: player_size.x,
-                y: window.height(),
+                y: aim_height,
             };
 
             // Includes some buffer to give the player a slight advantage.
@@ -444,7 +450,7 @@ fn projectile_collision(
                                 transform: Transform::from_xyz(
                                     pos.translation.x,
                                     pos.translation.y,
-                                    0.,
+                                    Layers::Actors.order_nr(),
                                 ),
                                 ..default()
                             },

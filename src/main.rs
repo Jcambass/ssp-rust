@@ -395,7 +395,7 @@ fn enemy_collision(
                 SpriteSheetBundle {
                     texture_atlas: my_assets.explosion.clone(),
                     sprite: TextureAtlasSprite::new(animation_indices.first),
-                    transform: Transform::from_xyz(pos.translation.x, pos.translation.y, 0.),
+                    transform: Transform::from_xyz(pos.translation.x, pos.translation.y, Layers::Actors.order_nr()),
                     ..default()
                 },
                 animation_indices,
