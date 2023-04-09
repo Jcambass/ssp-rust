@@ -39,6 +39,7 @@ pub struct Projectile {
     pub damage: u32,
     pub friendly: bool,
     pub projectile_type: ProjectileType,
+    pub pushback: f32,
 }
 
 impl Projectile {
@@ -74,7 +75,11 @@ impl Weapon {
         Weapon {
             name: String::from("Stomp O´ Matic"),
             cooldown_timer: timer,
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
+            mounting_point: if friendly {
+                Transform::from_xyz(-50.0, 6.5, 0.0)
+            } else {
+                Transform::from_xyz(0.0, 0.0, 0.0)
+            },
             gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
                 Projectile {
@@ -82,6 +87,7 @@ impl Weapon {
                     speed: 13.0,
                     damage: 6,
                     projectile_type: ProjectileType::Stomp,
+                    pushback: 0.0
                 }
             } else {
                 Projectile {
@@ -89,6 +95,7 @@ impl Weapon {
                     speed: 10.0,
                     damage: 6,
                     projectile_type: ProjectileType::Stomp,
+                    pushback: 0.0
                 }
             },
         }
@@ -106,14 +113,18 @@ impl Weapon {
         Weapon {
             name: String::from("Space Blaster"),
             cooldown_timer: timer,
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+            mounting_point: if friendly {
+                Transform::from_xyz(-50.0, 6.5, 0.0)
+            } else {
+                Transform::from_xyz(0.0, 0.0, 0.0)
+            },            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
                 Projectile {
                     friendly: true,
                     speed: 15.0,
                     damage: 12,
                     projectile_type: ProjectileType::Blaster,
+                    pushback: 0.0
                 }
             } else {
                 Projectile {
@@ -121,6 +132,7 @@ impl Weapon {
                     speed: 5.0,
                     damage: 50,
                     projectile_type: ProjectileType::Blaster,
+                    pushback: 0.0
                 }
             },
         }
@@ -138,14 +150,18 @@ impl Weapon {
         Weapon {
             name: String::from("Grim Reaper"),
             cooldown_timer: timer,
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+            mounting_point: if friendly {
+                Transform::from_xyz(-50.0, 6.5, 0.0)
+            } else {
+                Transform::from_xyz(0.0, 0.0, 0.0)
+            },            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
                 Projectile {
                     friendly: true,
                     speed: 5.0,
                     damage: 50,
                     projectile_type: ProjectileType::Grim,
+                    pushback: 0.0
                 }
             } else {
                 Projectile {
@@ -153,6 +169,7 @@ impl Weapon {
                     speed: 4.0,
                     damage: 40,
                     projectile_type: ProjectileType::Grim,
+                    pushback: 0.0
                 }
             },
         }
@@ -170,8 +187,11 @@ impl Weapon {
         Weapon {
             name: String::from("Space Hammer"),
             cooldown_timer: timer,
-            mounting_point: Transform::from_xyz(0.0, 0.0, 0.0),
-            gun_positions: vec![
+            mounting_point: if friendly {
+                Transform::from_xyz(-50.0, 6.5, 0.0)
+            } else {
+                Transform::from_xyz(0.0, 0.0, 0.0)
+            },            gun_positions: vec![
                 Transform::from_xyz(-24.0, 0.0, 0.0),
                 Transform::from_xyz(0.0, 0.0, 0.0),
                 Transform::from_xyz(24.0, 0.0, 0.0),
@@ -182,6 +202,7 @@ impl Weapon {
                     speed: 10.0,
                     damage: 4,
                     projectile_type: ProjectileType::Hammer,
+                    pushback: 36.0
                 }
             } else {
                 Projectile {
@@ -189,6 +210,7 @@ impl Weapon {
                     speed: 7.0,
                     damage: 4,
                     projectile_type: ProjectileType::Hammer,
+                    pushback: 36.0
                 }
             },
         }
@@ -206,8 +228,11 @@ impl Weapon {
         Weapon {
             name: String::from("Ratata 9000"),
             cooldown_timer: timer,
-            mounting_point: Transform::from_xyz(10.0, 6.5, 0.0),
-            gun_positions: vec![
+            mounting_point: if friendly {
+                Transform::from_xyz(-50.0, 6.5, 0.0)
+            } else {
+                Transform::from_xyz(0.0, 0.0, 0.0)
+            },            gun_positions: vec![
                 Transform::from_xyz(-6.0, 0.0, 0.0),
                 Transform::from_xyz(6.0, 0.0, 0.0),
             ],
@@ -217,6 +242,7 @@ impl Weapon {
                     speed: 15.0,
                     damage: 3,
                     projectile_type: ProjectileType::Ratata,
+                    pushback: 0.0
                 }
             } else {
                 Projectile {
@@ -224,6 +250,7 @@ impl Weapon {
                     speed: 12.0,
                     damage: 3,
                     projectile_type: ProjectileType::Ratata,
+                    pushback: 0.0
                 }
             },
         }
@@ -401,7 +428,7 @@ fn projectile_collision(
     mut commands: Commands,
     mut game: ResMut<Game>,
     assets: Res<Assets<Image>>,
-    player_query: Query<
+    mut player_query: Query<
         (Entity, &mut Player, &mut Transform, &mut Handle<Image>),
         (Without<Enemy>, Without<Projectile>),
     >,
@@ -419,7 +446,7 @@ fn projectile_collision(
         let projectile_size = assets.get(img_handle).unwrap().size();
 
         if projectile.friendly {
-            for (enemy_entity, mut enemy, pos, img) in &mut enemies_query {
+            for (enemy_entity, mut enemy, mut pos, img) in &mut enemies_query {
                 let enemy_size = assets.get(&img).unwrap().size();
 
                 if collide(
@@ -431,6 +458,8 @@ fn projectile_collision(
                 .is_some()
                 {
                     commands.entity(proj_entity).despawn();
+
+                    pos.translation.y += projectile.pushback;
 
                     enemy.health = if let Some(i) = enemy.health.checked_sub(projectile.damage) {
                         i
@@ -461,8 +490,8 @@ fn projectile_collision(
                 }
             }
         } else {
-            let (_player_entity, _player, pos, img) = player_query.single();
-            let player_size = assets.get(img).unwrap().size();
+            let (_player_entity, _player, mut pos, img) = player_query.single_mut();
+            let player_size = assets.get(&img).unwrap().size();
 
             if collide(
                 pos.translation,
@@ -473,6 +502,9 @@ fn projectile_collision(
             .is_some()
             {
                 commands.entity(proj_entity).despawn();
+
+                pos.translation.y -= projectile.pushback;
+
                 game.health = if let Some(i) = game.health.checked_sub(projectile.damage) {
                     i
                 } else {
