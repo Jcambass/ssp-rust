@@ -74,25 +74,25 @@ fn player_border(
     let (_player, mut pos, img) = player_query.single_mut();
     let player_size = assets.get(img).unwrap().size();
 
-    let max_y = window.height()/2.0 - player_size.y/2.0;
-    let min_y = -window.height()/2.0 + player_size.y/2.0;
+    let max_y = window.height() / 2.0 - player_size.y / 2.0;
+    let min_y = -window.height() / 2.0 + player_size.y / 2.0;
 
-    if pos.translation.y >  max_y {
+    if pos.translation.y > max_y {
         pos.translation.y = max_y;
     }
 
-    if pos.translation.y < min_y{
+    if pos.translation.y < min_y {
         pos.translation.y = min_y;
     }
 
-    let max_x = window.width()/2.0 - player_size.x/2.0;
-    let min_x = -window.width()/2.0 + player_size.x/2.0;
+    let max_x = window.width() / 2.0 - player_size.x / 2.0;
+    let min_x = -window.width() / 2.0 + player_size.x / 2.0;
 
-    if pos.translation.x >  max_x {
+    if pos.translation.x > max_x {
         pos.translation.x = max_x;
     }
 
-    if pos.translation.x < min_x{
+    if pos.translation.x < min_x {
         pos.translation.x = min_x;
     }
 }

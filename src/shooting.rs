@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, sprite::collide_aabb::collide, window::PrimaryWindow};
 
 use crate::{
-    AnimationIndices, AnimationTimer, AppState, Enemy, Game, MyAssets, Player, Layers,
+    AnimationIndices, AnimationTimer, AppState, Enemy, Game, Layers, MyAssets, Player,
     ORIGINAL_TARGET_FPS,
 };
 
@@ -87,7 +87,7 @@ impl Weapon {
                     speed: 13.0,
                     damage: 6,
                     projectile_type: ProjectileType::Stomp,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             } else {
                 Projectile {
@@ -95,7 +95,7 @@ impl Weapon {
                     speed: 10.0,
                     damage: 6,
                     projectile_type: ProjectileType::Stomp,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             },
         }
@@ -117,14 +117,15 @@ impl Weapon {
                 Transform::from_xyz(-50.0, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
-            },            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+            },
+            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
                 Projectile {
                     friendly: true,
                     speed: 15.0,
                     damage: 12,
                     projectile_type: ProjectileType::Blaster,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             } else {
                 Projectile {
@@ -132,7 +133,7 @@ impl Weapon {
                     speed: 5.0,
                     damage: 50,
                     projectile_type: ProjectileType::Blaster,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             },
         }
@@ -154,14 +155,15 @@ impl Weapon {
                 Transform::from_xyz(-50.0, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
-            },            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
+            },
+            gun_positions: vec![Transform::from_xyz(0.0, 0.0, 0.0)],
             projectile: if friendly {
                 Projectile {
                     friendly: true,
                     speed: 5.0,
                     damage: 50,
                     projectile_type: ProjectileType::Grim,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             } else {
                 Projectile {
@@ -169,7 +171,7 @@ impl Weapon {
                     speed: 4.0,
                     damage: 40,
                     projectile_type: ProjectileType::Grim,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             },
         }
@@ -191,7 +193,8 @@ impl Weapon {
                 Transform::from_xyz(-50.0, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
-            },            gun_positions: vec![
+            },
+            gun_positions: vec![
                 Transform::from_xyz(-24.0, 0.0, 0.0),
                 Transform::from_xyz(0.0, 0.0, 0.0),
                 Transform::from_xyz(24.0, 0.0, 0.0),
@@ -202,7 +205,7 @@ impl Weapon {
                     speed: 10.0,
                     damage: 4,
                     projectile_type: ProjectileType::Hammer,
-                    pushback: 36.0
+                    pushback: 36.0,
                 }
             } else {
                 Projectile {
@@ -210,7 +213,7 @@ impl Weapon {
                     speed: 7.0,
                     damage: 4,
                     projectile_type: ProjectileType::Hammer,
-                    pushback: 36.0
+                    pushback: 36.0,
                 }
             },
         }
@@ -232,7 +235,8 @@ impl Weapon {
                 Transform::from_xyz(-50.0, 6.5, 0.0)
             } else {
                 Transform::from_xyz(0.0, 0.0, 0.0)
-            },            gun_positions: vec![
+            },
+            gun_positions: vec![
                 Transform::from_xyz(-6.0, 0.0, 0.0),
                 Transform::from_xyz(6.0, 0.0, 0.0),
             ],
@@ -242,7 +246,7 @@ impl Weapon {
                     speed: 15.0,
                     damage: 3,
                     projectile_type: ProjectileType::Ratata,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             } else {
                 Projectile {
@@ -250,7 +254,7 @@ impl Weapon {
                     speed: 12.0,
                     damage: 3,
                     projectile_type: ProjectileType::Ratata,
-                    pushback: 0.0
+                    pushback: 0.0,
                 }
             },
         }
@@ -294,7 +298,7 @@ fn player_shoot(
                             + pos.translation.y
                             + player_size.y / 2.0
                             + projectile_size.y / 2.0,
-                        Layers::Projectiles.order_nr()
+                        Layers::Projectiles.order_nr(),
                     ),
                     ..default()
                 },
@@ -331,7 +335,7 @@ fn enemy_shoot(
             let aim_height = window.height() / 2.0 + transform.translation.y;
             let aim_pos = Vec3 {
                 x: transform.translation.x,
-                y: transform.translation.y - aim_height/2.0,
+                y: transform.translation.y - aim_height / 2.0,
                 z: Layers::Actors.order_nr(),
             };
 

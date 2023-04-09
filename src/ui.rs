@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 
-use crate::{AppState, Game, LevelUpEvent, EARTH_HEALTH, PLAYER_HEALTH, shooting::WeaponSwitchedEvent, Player};
+use crate::{
+    shooting::WeaponSwitchedEvent, AppState, Game, LevelUpEvent, Player, EARTH_HEALTH,
+    PLAYER_HEALTH,
+};
 
 pub struct UiOverlayPlugin;
 
@@ -206,7 +209,6 @@ fn gameover_screen(
     ];
 }
 
-
 fn gamewon_screen(
     mut query: Query<&mut Text, With<MessageText>>,
     asset_server: Res<AssetServer>,
@@ -221,12 +223,18 @@ fn gamewon_screen(
 
     let mut text = query.single_mut();
     text.sections = vec![
-        TextSection::new("VICTORY - YOU HAVE SUCCESSFULLY PROTECTED EARTH!!!\n", text_style.clone()),
+        TextSection::new(
+            "VICTORY - YOU HAVE SUCCESSFULLY PROTECTED EARTH!!!\n",
+            text_style.clone(),
+        ),
         TextSection::new("YOUR SCORE: ", text_style.clone()),
         TextSection::new(game.score.to_string(), text_style.clone()),
         TextSection::new("\n", text_style.clone()),
         TextSection::new("YOUR FINAL SCORE: ", text_style.clone()),
-        TextSection::new((game.score + game.earth_health + game.health).to_string(), text_style.clone()),
+        TextSection::new(
+            (game.score + game.earth_health + game.health).to_string(),
+            text_style.clone(),
+        ),
     ];
 }
 

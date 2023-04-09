@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 
-use crate::{AppState, Enemy, MyAssets, ORIGINAL_TARGET_FPS, Layers};
+use crate::{AppState, Enemy, Layers, MyAssets, ORIGINAL_TARGET_FPS};
 
 const MIN_SPAWN_SECONDS: f32 = 1.0;
 const MAX_SPAWN_SECONDS: f32 = 5.5;
