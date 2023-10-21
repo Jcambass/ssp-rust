@@ -5,6 +5,7 @@ use bevy::{
     window::{PresentMode, PrimaryWindow},
 };
 use bevy_asset_loader::prelude::{AssetCollection, LoadingState, LoadingStateAppExt};
+use bevy_editor_pls::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use rand::Rng;
 
@@ -92,6 +93,7 @@ fn main() {
         .add_plugin(shooting::ShootingPlugin)
         .add_plugin(ui::UiOverlayPlugin)
         //.add_plugin(WorldInspectorPlugin::new())
+        //.add_plugin(EditorPlugin::default())
         .run();
 }
 
@@ -201,6 +203,18 @@ pub struct MyAssets {
     ))]
     #[asset(path = "projectiles/hit_green.png")]
     hit_green: Handle<TextureAtlas>,
+    // UI
+    #[asset(path = "ui/health_box.png")]
+    health_box: Handle<Image>,
+    #[asset(path = "ui/score_box.png")]
+    score_box: Handle<Image>,
+    // Bars
+    #[asset(path = "ui/orange_left.png")]
+    orange_left: Handle<Image>,
+    #[asset(path = "ui/orange_middle.png")]
+    orange_middle: Handle<Image>,
+    #[asset(path = "ui/orange_right.png")]
+    orange_right: Handle<Image>,
 }
 
 #[derive(Component)]
@@ -355,7 +369,7 @@ fn despawn_enemies(
     assets: Res<Assets<Image>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
-    let window = window_query.single();
+    let window: &Window = window_query.single();
 
     for (enemy_entity, enemy, transform, img_handle) in &mut sprite_position {
         let enemy_size = assets.get(img_handle).unwrap().size();
