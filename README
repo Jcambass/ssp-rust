@@ -5,3 +5,22 @@
 ## WASM
 
 `trunk serve`
+
+## Deploy
+
+We build this localy and push to the docker registry. This safes space on the dokku host but means a less portable dev environment. We might change this in the future.
+
+`trunk build --release`
+
+> ![NOTE]
+> Make sure to have `docker login ghcr.io` before
+
+`docker build --platform linux/amd64 -t ghcr.io/jcambass/ssp-rust:BUILD_NUMBER .`
+`docker push ghcr.io/jcambass/ssp-rust:BUILD_NUMBER`
+
+
+ON DOKKU
+
+```
+dokku git:from-image ssp-rust ghcr.io/jcambass/ssp-rust:BUILD_NUMBER
+```
