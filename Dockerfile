@@ -12,5 +12,8 @@ WORKDIR /home/static
 # Use the .dockerignore file to control what ends up inside the image!
 COPY dist/ .
 
+# Copy httpd conf
+COPY httpd.conf .
+
 # Run BusyBox httpd
 CMD ["busybox", "httpd", "-f", "-v", "-p", "5000"]
